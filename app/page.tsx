@@ -18,11 +18,12 @@ type Customer = { id: string; name: string; phone: string; created_at: string; b
 type Debt = { id: string; customer_id: string; amount: number; paid_amount: number; created_at: string; date: string; invoice_no: string; item: string; cashier: string; qty: number; unit_price: number | null; wholesale_price: number | null; price_mode: "retail" | "wholesale"; invoice_id: string | null };
 type Payment = { id: string; debt_item_id: string; customer_id: string; amount: number; paid_at: string; received_by: string; source: "cash" | "credit" };
 type Cashier = { id: string; name: string; phone: string; is_active: boolean };
-type LedgerData = { customers: Customer[]; debts: Debt[]; payments: Payment[]; cashiers: Cashier[]; importSummary?: { import_count?: number; row_count?: number; last_import_at?: string | null } };
+type StoreInformation = { name: string; address: string };
+type LedgerData = { customers: Customer[]; debts: Debt[]; payments: Payment[]; cashiers: Cashier[]; store: StoreInformation; importSummary?: { import_count?: number; row_count?: number; last_import_at?: string | null } };
 type DebtDraft = { id: string; item: string; qty: string; unitPrice: string; wholesalePrice: string; priceMode: "retail" | "wholesale" };
 type ShareStyle = "formal" | "detailed" | "friendly";
 
-const emptyData: LedgerData = { customers: [], debts: [], payments: [], cashiers: [] };
+const emptyData: LedgerData = { customers: [], debts: [], payments: [], cashiers: [], store: { name: "Toko Anda", address: "" } };
 const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 const receiptNumber = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
 const shortDate = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" });
@@ -89,6 +90,7 @@ export default function Home() {
         debts: result.debts.map((row: Debt) => ({ ...row, amount: asNumber(row.amount), paid_amount: asNumber(row.paid_amount), qty: asNumber(row.qty), unit_price: row.unit_price == null ? null : asNumber(row.unit_price), wholesale_price: row.wholesale_price == null ? null : asNumber(row.wholesale_price) })),
         payments: result.payments.map((row: Payment) => ({ ...row, amount: asNumber(row.amount) })),
         cashiers: result.cashiers ?? [],
+        store: result.store ?? { name: "Toko Anda", address: "" },
         importSummary: result.importSummary,
       };
       setData(normalized);
@@ -147,6 +149,9 @@ export default function Home() {
     const receipt = [
       "STRUK TAGIHAN",
       "==================================",
+      data.store.name.toUpperCase(),
+      ...(data.store.address ? [data.store.address.toUpperCase()] : []),
+      "----------------------------------",
       `NAMA : ${selected.name.toUpperCase()}`,
       "----------------------------------",
       receiptSections || "TIDAK ADA PIUTANG TERBUKA",
@@ -157,11 +162,11 @@ export default function Home() {
       "==================================",
     ].join("\n");
     return {
-      formal: `Yth. Bapak/Ibu ${selected.name},\n\nKami menyampaikan informasi saldo piutang Anda di Toko Anda.\nTotal sisa piutang: ${rupiah.format(selected.balance)}.${creditNote}\n\nMohon pembayaran dapat dilakukan saat memungkinkan. Jika sudah melakukan pembayaran, silakan abaikan pesan ini.\n\nTerima kasih.`,
+      formal: `Yth. Bapak/Ibu ${selected.name},\n\nKami menyampaikan informasi saldo piutang Anda di ${data.store.name}.\nTotal sisa piutang: ${rupiah.format(selected.balance)}.${creditNote}\n\nMohon pembayaran dapat dilakukan saat memungkinkan. Jika sudah melakukan pembayaran, silakan abaikan pesan ini.\n\nTerima kasih.\n${data.store.name}${data.store.address ? `\n${data.store.address}` : ""}`,
       detailed: `\`\`\`\n${receipt}\n\`\`\``,
-      friendly: `Halo Kak ${selected.name} 👋\n\nSemoga kabarnya baik. Kami ingin mengingatkan bahwa masih ada sisa piutang sebesar ${rupiah.format(selected.balance)} di Toko Anda.${creditNote}\n\nBoleh dibayarkan saat sudah memungkinkan, ya. Jika sudah membayar, pesan ini dapat diabaikan. Terima kasih banyak 🙏`,
+      friendly: `Halo Kak ${selected.name} 👋\n\nSemoga kabarnya baik. Kami ingin mengingatkan bahwa masih ada sisa piutang sebesar ${rupiah.format(selected.balance)} di ${data.store.name}.${creditNote}\n\nBoleh dibayarkan saat sudah memungkinkan, ya. Jika sudah membayar, pesan ini dapat diabaikan. Terima kasih banyak 🙏\n\n${data.store.name}`,
     };
-  }, [selected, selectedDebts]);
+  }, [data.store, selected, selectedDebts]);
   const shareMessage = shareMessages[shareStyle];
   const openBalance = data.customers.reduce((total, customer) => total + Math.max(0, customer.balance), 0);
   const paidThisMonth = data.payments.filter((payment) => payment.source !== "credit" && payment.paid_at.slice(0, 7) === new Date().toISOString().slice(0, 7)).reduce((total, payment) => total + payment.amount, 0);
@@ -289,7 +294,7 @@ export default function Home() {
     <main className="min-h-screen bg-background text-foreground lg:h-screen lg:overflow-hidden">
       <Toaster richColors position="top-right" />
       <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
-        <div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm"><BookOpenText className="size-5" /></div><div><p className="text-base font-bold leading-tight tracking-tight">Buku Piutang</p><p className="text-xs text-muted-foreground">Toko Anda</p></div></div>
+        <div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm"><BookOpenText className="size-5" /></div><div><p className="text-base font-bold leading-tight tracking-tight">Buku Piutang</p><p className="text-xs text-muted-foreground">{data.store.name}</p></div></div>
         <div className="flex items-center gap-2"><Button variant="outline" size="sm" className="hidden gap-2 sm:flex" onClick={() => setImportOpen(true)}><ArrowDownToLine className="size-4" /> Impor cadangan</Button><Button asChild variant="ghost" size="icon-sm"><Link href="/pengaturan" aria-label="Buka pengaturan toko" title="Pengaturan toko"><Settings2 className="size-4" /></Link></Button><Button variant="ghost" size="icon-sm" aria-label="Keluar dari akun" title="Keluar" onClick={() => void signOut()}><LogOut className="size-4" /></Button><Button size="sm" className="gap-2 shadow-sm" disabled={!selected} onClick={() => setDebtOpen(true)}><Plus className="size-4" /> Catat piutang</Button></div>
       </header>
 

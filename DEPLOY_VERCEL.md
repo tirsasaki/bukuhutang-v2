@@ -39,5 +39,6 @@ Jika basis data sudah pernah dibuat, jalankan berkas baru di dalam folder `supab
 3. `supabase/migrations/20260917_fix_invoice_date_ambiguity.sql`
 4. `supabase/migrations/20260917_add_payment_options.sql`
 5. `supabase/migrations/20260917_add_overpayment_credit.sql`
+6. `supabase/migrations/20260917_add_store_settings.sql`
 
-Migrasi kedua menambahkan nota otomatis, beberapa barang dalam satu nota, serta harga eceran dan grosir. Migrasi ketiga memperbaiki fungsi penghitung nomor nota. Migrasi keempat menambahkan pembayaran sebagian dan pelunasan seluruh piutang pelanggan. Migrasi kelima mencatat kelebihan pembayaran sebagai saldo pelanggan. Jalankan migrasi secara berurutan sebelum memakai fitur terkait.
+Migrasi kedua menambahkan nota otomatis, beberapa barang dalam satu nota, serta harga eceran dan grosir. Migrasi ketiga memperbaiki fungsi penghitung nomor nota. Migrasi keempat menambahkan pembayaran sebagian dan pelunasan seluruh piutang pelanggan. Migrasi kelima mencatat kelebihan pembayaran sebagai saldo pelanggan. Migrasi keenam menyimpan nama dan alamat toko. Jalankan migrasi secara berurutan sebelum memakai fitur terkait.
