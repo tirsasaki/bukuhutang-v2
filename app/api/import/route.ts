@@ -1,4 +1,5 @@
 import { requireApiUser } from "@/lib/supabase/server";
+import { databaseSetupMessage, isMissingDatabaseSchema } from "@/lib/supabase/errors";
 
 type Row = Record<string, unknown>;
 type Backup = { exported_at?: unknown; user_id?: unknown; tables?: Record<string, unknown> };
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error(error);
     if (error instanceof Error && error.message === "UNAUTHORIZED") return Response.json({ ok: false, message: "Silakan masuk terlebih dahulu." }, { status: 401 });
+    if (isMissingDatabaseSchema(error)) return Response.json({ ok: false, message: databaseSetupMessage }, { status: 503 });
     const message = error instanceof SyntaxError ? "Berkas bukan JSON yang valid." : "Cadangan belum dapat dipulihkan.";
     return Response.json({ ok: false, message }, { status: 400 });
   }

@@ -1,4 +1,5 @@
 import { requireApiUser } from "@/lib/supabase/server";
+import { databaseSetupMessage, isMissingDatabaseSchema } from "@/lib/supabase/errors";
 
 type CustomerRow = { id: string; name: string; phone: string; created_at: string };
 type DebtRow = { id: string; customer_id: string; amount: number; created_at: string; date: string; invoice_no: string; item: string; cashier: string; qty: number };
@@ -77,6 +78,7 @@ export async function GET() {
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return jsonError("Silakan masuk terlebih dahulu.", 401);
     console.error(error);
+    if (isMissingDatabaseSchema(error)) return jsonError(databaseSetupMessage, 503);
     return jsonError("Data piutang belum dapat dibuka.", 500);
   }
 }
@@ -145,6 +147,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return jsonError("Silakan masuk terlebih dahulu.", 401);
     console.error(error);
+    if (isMissingDatabaseSchema(error)) return jsonError(databaseSetupMessage, 503);
     return jsonError("Perubahan belum dapat disimpan.", 500);
   }
 }
