@@ -89,6 +89,21 @@ export async function POST(request: Request) {
       return Response.json({ ok: true, id });
     }
 
+    if (action === "update_customer") {
+      const customerId = String(body.customerId ?? "");
+      const name = String(body.name ?? "").trim();
+      const phone = String(body.phone ?? "").trim();
+      if (!name) return jsonError("Nama pelanggan wajib diisi.");
+      if (name.length > 100) return jsonError("Nama pelanggan terlalu panjang.");
+      if (phone.length > 30) return jsonError("Nomor WhatsApp terlalu panjang.");
+
+      const result = await env.DB.prepare(
+        "UPDATE customers SET name = ?, phone = ? WHERE id = ? AND owner_id = ?",
+      ).bind(name, phone, customerId, owner).run();
+      if (!result.meta.changes) return jsonError("Pelanggan tidak ditemukan.", 404);
+      return Response.json({ ok: true, id: customerId });
+    }
+
     if (action === "create_debt") {
       const customerId = String(body.customerId ?? "");
       const amount = Math.round(Number(body.amount));
