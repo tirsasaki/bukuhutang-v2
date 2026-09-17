@@ -4,9 +4,6 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Buku Piutang Toko",
   description: "Catat, pantau, dan pulihkan riwayat piutang toko dalam satu layar.",
-  other: {
-    "codex-preview": "development",
-  },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

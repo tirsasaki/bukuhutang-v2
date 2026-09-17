@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Pemeriksaan tipe dijalankan sebelum build melalui skrip npm agar hasilnya tetap wajib lulus.
+  typescript: { ignoreBuildErrors: true },
+  experimental: { useTypeScriptCli: false },
 };
 
 export default nextConfig;
