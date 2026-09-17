@@ -12,15 +12,16 @@ function jsonError(message: string, status = 400) {
 export async function GET() {
   try {
     const { supabase, user } = await requireApiUser();
-    const [customersResult, debtsResult, paymentsResult, creditsResult, importsResult] = await Promise.all([
+    const [customersResult, debtsResult, paymentsResult, creditsResult, importsResult, cashiersResult] = await Promise.all([
       supabase.from("customers").select("id,name,phone,created_at").eq("owner_id", user.id),
       supabase.from("debt_items").select("id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty").eq("owner_id", user.id).order("date", { ascending: false }),
       supabase.from("payments").select("id,debt_item_id,amount,paid_at,received_by").eq("owner_id", user.id).order("paid_at", { ascending: false }),
       supabase.from("credit_transactions").select("customer_id,amount").eq("owner_id", user.id),
       supabase.from("import_batches").select("row_count,imported_at").eq("owner_id", user.id),
+      supabase.from("cashiers").select("id,name,phone,is_active").eq("owner_id", user.id).order("name"),
     ]);
 
-    const firstError = customersResult.error ?? debtsResult.error ?? paymentsResult.error ?? creditsResult.error ?? importsResult.error;
+    const firstError = customersResult.error ?? debtsResult.error ?? paymentsResult.error ?? creditsResult.error ?? importsResult.error ?? cashiersResult.error;
     if (firstError) throw firstError;
 
     const customers = (customersResult.data ?? []) as CustomerRow[];
@@ -68,6 +69,7 @@ export async function GET() {
       customers: customerRows,
       debts: debtRows,
       payments: paymentRows,
+      cashiers: cashiersResult.data ?? [],
       importSummary: {
         import_count: imports.length,
         row_count: imports.reduce((total, row) => total + Number(row.row_count), 0),

@@ -29,3 +29,7 @@ Nilai pada `.env.example` hanya contoh. Jangan memasukkan nilai asli ke GitHub.
 4. Cocokkan jumlah pelanggan, piutang, pembayaran, dan total saldo dengan situs lama sebelum memindahkan pemakaian harian.
 
 Biarkan situs lama tetap aktif sampai pemeriksaan data selesai.
+
+## Pembaruan skema
+
+Jika basis data sudah pernah dibuat, jalankan berkas baru di dalam folder `supabase/migrations` secara berurutan melalui SQL Editor. Untuk fitur pengaturan kasir, jalankan `supabase/migrations/20260917_add_cashiers.sql` sebelum menerapkan versi aplikasinya.
