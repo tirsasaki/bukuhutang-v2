@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, BookOpenText, Loader2, PencilLine, Plus, Store, UsersRound } from "lucide-react";
+import { ArrowLeft, BookOpenText, Loader2, MapPin, PencilLine, Plus, Save, Store, UsersRound } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,20 +20,28 @@ type Cashier = {
   created_at: string;
   updated_at: string;
 };
+type StoreInformation = { name: string; address: string; updated_at: string | null };
 
 export default function StoreSettingsPage() {
   const [cashiers, setCashiers] = useState<Cashier[]>([]);
+  const [store, setStore] = useState<StoreInformation>({ name: "Toko Anda", address: "", updated_at: null });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingStore, setSavingStore] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Cashier | null>(null);
 
   const loadCashiers = useCallback(async () => {
     try {
-      const response = await fetch("/api/cashiers", { cache: "no-store" });
-      const result = await response.json();
-      if (!response.ok || !result.ok) throw new Error(result.message || "Daftar kasir belum dapat dibuka.");
-      setCashiers(result.cashiers);
+      const [cashierResponse, storeResponse] = await Promise.all([
+        fetch("/api/cashiers", { cache: "no-store" }),
+        fetch("/api/store", { cache: "no-store" }),
+      ]);
+      const [cashierResult, storeResult] = await Promise.all([cashierResponse.json(), storeResponse.json()]);
+      if (!cashierResponse.ok || !cashierResult.ok) throw new Error(cashierResult.message || "Daftar kasir belum dapat dibuka.");
+      if (!storeResponse.ok || !storeResult.ok) throw new Error(storeResult.message || "Informasi toko belum dapat dibuka.");
+      setCashiers(cashierResult.cashiers);
+      setStore(storeResult.store);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Daftar kasir belum dapat dibuka.");
     } finally {
@@ -69,6 +77,23 @@ export default function StoreSettingsPage() {
     }
   }
 
+  async function saveStore(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSavingStore(true);
+    try {
+      const values = Object.fromEntries(new FormData(event.currentTarget));
+      const response = await fetch("/api/store", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(values) });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.message || "Informasi toko belum dapat disimpan.");
+      setStore(result.store);
+      toast.success("Informasi toko diperbarui.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Informasi toko belum dapat disimpan.");
+    } finally {
+      setSavingStore(false);
+    }
+  }
+
   async function setActive(cashier: Cashier, isActive: boolean) {
     setCashiers((current) => current.map((item) => item.id === cashier.id ? { ...item, is_active: isActive } : item));
     try {
@@ -95,12 +120,17 @@ export default function StoreSettingsPage() {
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon-sm"><Link href="/" aria-label="Kembali ke buku piutang"><ArrowLeft className="size-4" /></Link></Button>
           <div className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground"><BookOpenText className="size-5" /></div>
-          <div><p className="font-bold leading-tight">Pengaturan Toko</p><p className="text-xs text-muted-foreground">Kasir dan operasional</p></div>
+          <div><p className="font-bold leading-tight">Pengaturan Toko</p><p className="text-xs text-muted-foreground">{store.name}</p></div>
         </div>
         <Button className="gap-2" onClick={() => { setEditing(null); setDialogOpen(true); }}><Plus className="size-4" /> Tambah kasir</Button>
       </header>
 
       <div className="mx-auto max-w-5xl p-4 lg:p-8">
+        <section className="mb-5 rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="mb-5 flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl bg-secondary text-primary"><Store className="size-5" /></div><div><h1 className="text-lg font-bold">Informasi toko</h1><p className="text-sm text-muted-foreground">Nama dan alamat ini digunakan pada identitas serta struk tagihan.</p></div></div>
+          {loading ? <div className="flex items-center gap-2 py-5 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Membuka informasi toko…</div> : <form key={store.updated_at ?? "new-store"} onSubmit={saveStore} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="storeName">Nama toko</Label><Input id="storeName" name="name" defaultValue={store.name} maxLength={100} placeholder="Contoh: Toko Berkah" required /></div><div className="space-y-2"><Label htmlFor="storeAddress">Alamat toko</Label><div className="relative"><MapPin className="absolute left-3 top-3 size-4 text-muted-foreground" /><textarea id="storeAddress" name="address" defaultValue={store.address} maxLength={500} rows={3} placeholder="Alamat lengkap toko" className="w-full resize-y rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50" /></div></div></div><div className="flex justify-end"><Button type="submit" className="gap-2" disabled={savingStore}><Save className="size-4" />{savingStore ? "Menyimpan…" : "Simpan informasi toko"}</Button></div></form>}
+        </section>
+
         <section className="mb-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl bg-secondary text-primary"><UsersRound className="size-5" /></div><div><p className="text-sm text-muted-foreground">Kasir aktif</p><p className="text-2xl font-bold">{activeCount}</p></div></div>

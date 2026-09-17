@@ -93,6 +93,13 @@ create table if not exists public.cashiers (
   unique (id, owner_id)
 );
 
+create table if not exists public.store_settings (
+  owner_id uuid primary key references auth.users(id) on delete cascade,
+  name text not null default 'Toko Anda' check (char_length(name) between 1 and 100),
+  address text not null default '' check (char_length(address) <= 500),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_customers_owner_name on public.customers(owner_id, name);
 create index if not exists idx_debt_owner_customer on public.debt_items(owner_id, customer_id);
 create index if not exists idx_debt_owner_date on public.debt_items(owner_id, date desc);
@@ -110,6 +117,7 @@ alter table public.payments enable row level security;
 alter table public.credit_transactions enable row level security;
 alter table public.import_batches enable row level security;
 alter table public.cashiers enable row level security;
+alter table public.store_settings enable row level security;
 
 create policy "customers_owner_only" on public.customers for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 create policy "invoice_counters_owner_only" on public.invoice_counters for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
@@ -119,6 +127,7 @@ create policy "payments_owner_only" on public.payments for all to authenticated 
 create policy "credit_transactions_owner_only" on public.credit_transactions for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 create policy "import_batches_owner_only" on public.import_batches for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 create policy "cashiers_owner_only" on public.cashiers for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+create policy "store_settings_owner_only" on public.store_settings for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 
 create or replace function public.record_customer_payment(
   payment_customer_id text,
