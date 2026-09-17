@@ -15,7 +15,7 @@ export async function GET() {
     const { supabase, user } = await requireApiUser();
     const [customersResult, debtsResult, paymentsResult, creditsResult, importsResult, cashiersResult] = await Promise.all([
       supabase.from("customers").select("id,name,phone,created_at").eq("owner_id", user.id),
-      supabase.from("debt_items").select("id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty,unit_price,wholesale_price,price_mode,invoice_id").eq("owner_id", user.id).order("date", { ascending: false }),
+      supabase.from("debt_items").select("id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty,unit_price,wholesale_price,price_mode,invoice_id").eq("owner_id", user.id).order("date", { ascending: false }).order("created_at", { ascending: false }),
       supabase.from("payments").select("id,debt_item_id,amount,paid_at,received_by,source").eq("owner_id", user.id).order("paid_at", { ascending: false }),
       supabase.from("credit_transactions").select("customer_id,amount").eq("owner_id", user.id),
       supabase.from("import_batches").select("row_count,imported_at").eq("owner_id", user.id),
@@ -53,20 +53,17 @@ export async function GET() {
       const credit = credits.filter((row) => row.customer_id === customer.id).reduce((total, row) => total + Number(row.amount), 0);
       const totalDebt = customerDebts.reduce((total, debt) => total + debt.amount, 0);
       const totalPaid = customerPayments.reduce((total, payment) => total + payment.amount, 0);
-      const netBalance = totalDebt - totalPaid - credit;
       return {
         ...customer,
-        balance: Math.max(0, netBalance),
-        credit_balance: Math.max(0, -netBalance),
+        balance: Math.max(0, totalDebt - totalPaid),
+        credit_balance: Math.max(0, credit),
         debt_count: customerDebts.length,
         last_debt_at: customerDebts[0]?.date ?? null,
         last_payment_at: customerPayments[0]?.paid_at ?? null,
         last_payment_amount: customerPayments[0]?.amount ?? 0,
+        last_activity_at: [customer.created_at, customerDebts[0]?.created_at, customerPayments[0]?.paid_at].filter(Boolean).sort().at(-1) ?? customer.created_at,
       };
-    }).sort((a, b) => {
-      if ((a.balance > 0) !== (b.balance > 0)) return a.balance > 0 ? -1 : 1;
-      return b.balance - a.balance || a.name.localeCompare(b.name, "id");
-    });
+    }).sort((a, b) => b.last_activity_at.localeCompare(a.last_activity_at));
 
     const imports = importsResult.data ?? [];
     return Response.json({
@@ -170,23 +167,21 @@ export async function POST(request: Request) {
       const customerId = String(body.customerId ?? "");
       const payAll = body.payAll === true || String(body.payAll ?? "") === "true";
       const amount = Math.round(Number(body.amount));
+      const creditAmount = Math.round(Number(body.creditAmount ?? 0));
       const receivedBy = String(body.receivedBy ?? "").trim();
-      if (!Number.isSafeInteger(amount) || amount <= 0) return jsonError("Nominal pembayaran harus lebih dari nol.");
+      if (!Number.isSafeInteger(creditAmount) || creditAmount < 0) return jsonError("Nominal saldo kelebihan bayar tidak valid.");
+      if (!Number.isSafeInteger(amount) || amount < 0 || amount + creditAmount <= 0) return jsonError("Jumlah pembayaran harus lebih dari nol.");
       if (!receivedBy) return jsonError("Pilih kasir yang menerima pembayaran.");
       const { data: activeCashier, error: cashierError } = await supabase.from("cashiers").select("id").eq("owner_id", user.id).eq("name", receivedBy).eq("is_active", true).maybeSingle();
       if (cashierError) throw cashierError;
       if (!activeCashier) return jsonError("Kasir tidak ditemukan atau sudah dinonaktifkan.");
-      const { data, error } = payAll
-        ? await supabase.rpc("settle_customer_debts", {
-            payment_customer_id: customerId,
-            payment_received_amount: amount,
-            payment_received_by: receivedBy,
-          })
-        : await supabase.rpc("record_customer_payment", {
-            payment_customer_id: customerId,
-            payment_amount: amount,
-            payment_received_by: receivedBy,
-          });
+      const { data, error } = await supabase.rpc("record_customer_payment_v2", {
+        payment_customer_id: customerId,
+        payment_cash_amount: amount,
+        payment_credit_amount: creditAmount,
+        payment_received_by: receivedBy,
+        payment_pay_all: payAll,
+      });
       if (error) throw error;
       if (!data?.recorded) return jsonError("Pelanggan ini tidak mempunyai piutang terbuka.");
       return Response.json({
@@ -205,6 +200,7 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return jsonError("Silakan masuk terlebih dahulu.", 401);
     console.error(error);
     if (isMissingDatabaseSchema(error)) return jsonError(databaseSetupMessage, 503);
+    if (error && typeof error === "object" && "code" in error && error.code === "P0001" && "message" in error && typeof error.message === "string") return jsonError(error.message);
     return jsonError("Perubahan belum dapat disimpan.", 500);
   }
 }

@@ -286,6 +286,106 @@ $$;
 revoke all on function public.settle_customer_debts(text, bigint, text) from public, anon;
 grant execute on function public.settle_customer_debts(text, bigint, text) to authenticated;
 
+create or replace function public.record_customer_payment_v2(
+  payment_customer_id text,
+  payment_cash_amount bigint,
+  payment_credit_amount bigint,
+  payment_received_by text,
+  payment_pay_all boolean
+) returns jsonb
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  debt record;
+  debt_remaining bigint;
+  paid bigint;
+  total_outstanding bigint := 0;
+  available_credit bigint := 0;
+  credit_used bigint := 0;
+  credit_remaining bigint := 0;
+  cash_applied bigint := 0;
+  cash_remaining bigint := 0;
+  overpayment bigint := 0;
+  settled_count integer := 0;
+begin
+  if auth.uid() is null or payment_cash_amount < 0 or payment_credit_amount < 0 then raise exception 'Pembayaran tidak valid'; end if;
+  perform 1 from public.customers where id = payment_customer_id and owner_id = auth.uid() for update;
+  if not found then raise exception 'Pelanggan tidak ditemukan'; end if;
+
+  select coalesce(sum(open_debt.outstanding), 0) into total_outstanding
+  from (
+    select d.amount - coalesce(sum(p.amount), 0) as outstanding
+    from public.debt_items d
+    left join public.payments p on p.debt_item_id = d.id and p.owner_id = auth.uid()
+    where d.owner_id = auth.uid() and d.customer_id = payment_customer_id
+    group by d.id, d.amount
+    having d.amount - coalesce(sum(p.amount), 0) > 0
+  ) open_debt;
+  if total_outstanding <= 0 then raise exception 'Pelanggan tidak mempunyai piutang terbuka'; end if;
+
+  select greatest(coalesce(sum(amount), 0), 0) into available_credit
+  from public.credit_transactions where owner_id = auth.uid() and customer_id = payment_customer_id;
+  if payment_credit_amount > available_credit then raise exception 'Saldo kelebihan bayar tidak mencukupi'; end if;
+
+  credit_used := least(payment_credit_amount, total_outstanding);
+  if payment_pay_all then
+    cash_applied := total_outstanding - credit_used;
+    if payment_cash_amount < cash_applied then raise exception 'Uang diterima dan saldo yang digunakan belum mencukupi'; end if;
+    overpayment := payment_cash_amount - cash_applied;
+  else
+    cash_applied := payment_cash_amount;
+    if cash_applied + credit_used <= 0 or cash_applied + credit_used > total_outstanding then raise exception 'Jumlah pembayaran melebihi sisa piutang'; end if;
+  end if;
+  credit_remaining := credit_used;
+  cash_remaining := cash_applied;
+
+  for debt in
+    select d.id, d.amount - coalesce(sum(p.amount), 0) as outstanding
+    from public.debt_items d
+    left join public.payments p on p.debt_item_id = d.id and p.owner_id = auth.uid()
+    where d.owner_id = auth.uid() and d.customer_id = payment_customer_id
+    group by d.id, d.amount, d.date, d.created_at
+    having d.amount - coalesce(sum(p.amount), 0) > 0
+    order by d.date asc, d.created_at asc, d.id asc
+  loop
+    debt_remaining := debt.outstanding;
+    if credit_remaining > 0 then
+      paid := least(credit_remaining, debt_remaining);
+      insert into public.payments (id, owner_id, debt_item_id, amount, paid_at, received_by, source)
+      values (gen_random_uuid()::text, auth.uid(), debt.id, paid, now(), 'Saldo kelebihan bayar', 'credit');
+      credit_remaining := credit_remaining - paid;
+      debt_remaining := debt_remaining - paid;
+    end if;
+    if debt_remaining > 0 and cash_remaining > 0 then
+      paid := least(cash_remaining, debt_remaining);
+      insert into public.payments (id, owner_id, debt_item_id, amount, paid_at, received_by, source)
+      values (gen_random_uuid()::text, auth.uid(), debt.id, paid, now(), coalesce(payment_received_by, ''), 'cash');
+      cash_remaining := cash_remaining - paid;
+      debt_remaining := debt_remaining - paid;
+    end if;
+    if debt_remaining = 0 then settled_count := settled_count + 1; end if;
+    exit when credit_remaining <= 0 and cash_remaining <= 0;
+  end loop;
+
+  if credit_used > 0 then
+    insert into public.credit_transactions (id, owner_id, customer_id, amount, note, created_at)
+    values (gen_random_uuid()::text, auth.uid(), payment_customer_id, -credit_used, 'Pemakaian saldo kelebihan bayar', now());
+  end if;
+  if overpayment > 0 then
+    insert into public.credit_transactions (id, owner_id, customer_id, amount, note, created_at)
+    values (gen_random_uuid()::text, auth.uid(), payment_customer_id, overpayment, 'Kelebihan pembayaran pelunasan', now());
+  end if;
+
+  return jsonb_build_object('recorded', true, 'paidAmount', cash_applied, 'receivedAmount', payment_cash_amount, 'overpayment', overpayment, 'creditUsed', credit_used, 'remainingBalance', total_outstanding - cash_applied - credit_used, 'settledCount', settled_count);
+end;
+$$;
+
+revoke all on function public.record_customer_payment_v2(text, bigint, bigint, text, boolean) from public, anon;
+grant execute on function public.record_customer_payment_v2(text, bigint, bigint, text, boolean) to authenticated;
+revoke execute on function public.settle_customer_debts(text, bigint, text) from authenticated;
+
 create or replace function public.create_debt_invoice(
   invoice_customer_id text,
   invoice_date date,
