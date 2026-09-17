@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, BookOpenText, CheckCircle2, ChevronRight, CircleDollarSign, Clock3, Loader2, PencilLine, Plus, Search, Settings2, UploadCloud, UserPlus, WalletCards } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowDownToLine, BookOpenText, CheckCircle2, ChevronRight, CircleDollarSign, Clock3, Loader2, LogOut, PencilLine, Plus, Search, Settings2, UploadCloud, UserPlus, WalletCards } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Customer = { id: string; name: string; phone: string; created_at: string; balance: number; debt_count: number; last_debt_at: string | null; last_payment_at: string | null; last_payment_amount: number };
 type Debt = { id: string; customer_id: string; amount: number; paid_amount: number; created_at: string; date: string; invoice_no: string; item: string; cashier: string; qty: number };
@@ -29,6 +31,7 @@ function formatDate(value?: string | null) {
 function asNumber(value: unknown) { const number = Number(value); return Number.isFinite(number) ? number : 0; }
 
 export default function Home() {
+  const router = useRouter();
   const [data, setData] = useState<LedgerData>(emptyData);
   const [selectedId, setSelectedId] = useState<string>("");
   const [query, setQuery] = useState("");
@@ -40,6 +43,13 @@ export default function Home() {
   const [debtOpen, setDebtOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  async function signOut() {
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   const loadData = useCallback(async () => {
     try {
@@ -61,7 +71,10 @@ export default function Home() {
     }
   }, []);
 
-  useEffect(() => { void loadData(); }, [loadData]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadData(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadData]);
 
   const selected = data.customers.find((customer) => customer.id === selectedId) ?? null;
   const visibleCustomers = useMemo(() => data.customers.filter((customer) => `${customer.name} ${customer.phone}`.toLowerCase().includes(query.toLowerCase())), [data.customers, query]);
@@ -136,7 +149,7 @@ export default function Home() {
       <Toaster richColors position="top-right" />
       <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
         <div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm"><BookOpenText className="size-5" /></div><div><p className="text-base font-bold leading-tight tracking-tight">Buku Piutang</p><p className="text-xs text-muted-foreground">Toko Anda</p></div></div>
-        <div className="flex items-center gap-2"><Button variant="outline" size="sm" className="hidden gap-2 sm:flex" onClick={() => setImportOpen(true)}><ArrowDownToLine className="size-4" /> Impor cadangan</Button><Button size="sm" className="gap-2 shadow-sm" disabled={!selected} onClick={() => setDebtOpen(true)}><Plus className="size-4" /> Catat piutang</Button></div>
+        <div className="flex items-center gap-2"><Button variant="outline" size="sm" className="hidden gap-2 sm:flex" onClick={() => setImportOpen(true)}><ArrowDownToLine className="size-4" /> Impor cadangan</Button><Button variant="ghost" size="icon-sm" aria-label="Keluar dari akun" title="Keluar" onClick={() => void signOut()}><LogOut className="size-4" /></Button><Button size="sm" className="gap-2 shadow-sm" disabled={!selected} onClick={() => setDebtOpen(true)}><Plus className="size-4" /> Catat piutang</Button></div>
       </header>
 
       <section className="grid border-b border-border bg-card px-4 py-3 sm:grid-cols-2 lg:grid-cols-4 lg:px-6">

@@ -1,7 +1,4 @@
-import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
-
-export const runtime = "edge";
+import { requireApiUser } from "@/lib/supabase/server";
 
 type Row = Record<string, unknown>;
 type Backup = { exported_at?: unknown; user_id?: unknown; tables?: Record<string, unknown> };
@@ -16,11 +13,7 @@ function integer(value: unknown, fallback = 0) { const number = Math.round(Numbe
 
 export async function POST(request: Request) {
   try {
-    const user = await getChatGPTUser();
-    const host = new URL(request.url).hostname;
-    const owner = user?.userId ?? ((host === "localhost" || host === "127.0.0.1") ? "local-preview" : null);
-    if (!owner) return Response.json({ ok: false, message: "Silakan masuk terlebih dahulu." }, { status: 401 });
-    if (!env.DB) return Response.json({ ok: false, message: "Penyimpanan belum tersedia." }, { status: 503 });
+    const { supabase, user } = await requireApiUser();
     const raw = await request.text();
     if (raw.length > 5_000_000) return Response.json({ ok: false, message: "Berkas cadangan terlalu besar." }, { status: 413 });
     const backup = JSON.parse(raw) as Backup;
@@ -28,37 +21,62 @@ export async function POST(request: Request) {
 
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
     const fingerprint = Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
-    const duplicate = await env.DB.prepare("SELECT row_count FROM import_batches WHERE owner_id = ? AND fingerprint = ?").bind(owner, fingerprint).first<{ row_count: number }>();
+    const { data: duplicate, error: duplicateError } = await supabase.from("import_batches").select("row_count").eq("owner_id", user.id).eq("fingerprint", fingerprint).maybeSingle();
+    if (duplicateError) throw duplicateError;
     if (duplicate) return Response.json({ ok: true, duplicate: true, imported: 0, rowCount: duplicate.row_count });
 
+    const now = new Date().toISOString();
     const sourceUserId = text(backup.user_id);
     const customerRows = rows(backup.tables.customers);
     const debtRows = rows(backup.tables.debt_items);
     const paymentRows = rows(backup.tables.payments);
     const creditRows = rows(backup.tables.credit_transactions);
-    const statements = [];
 
-    for (const row of customerRows) statements.push(env.DB.prepare(`
-      INSERT OR IGNORE INTO customers (id, owner_id, source_user_id, name, phone, created_at) VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(text(row.id, crypto.randomUUID()), owner, sourceUserId, text(row.name, "Tanpa nama"), text(row.phone), text(row.created_at, new Date().toISOString())));
-    for (const row of debtRows) statements.push(env.DB.prepare(`
-      INSERT OR IGNORE INTO debt_items (id, owner_id, customer_id, amount, created_at, date, invoice_no, item, cashier, qty)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(text(row.id, crypto.randomUUID()), owner, text(row.customer_id), integer(row.amount), text(row.created_at, new Date().toISOString()), text(row.date, text(row.created_at).slice(0, 10)), text(row.invoice_no), text(row.item), text(row.kasir), Math.max(1, integer(row.qty, 1))));
-    for (const row of paymentRows) statements.push(env.DB.prepare(`
-      INSERT OR IGNORE INTO payments (id, owner_id, debt_item_id, amount, paid_at, received_by) VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(text(row.id, crypto.randomUUID()), owner, text(row.debt_item_id), integer(row.amount), text(row.paid_at, new Date().toISOString()), text(row.received_by)));
-    for (const row of creditRows) statements.push(env.DB.prepare(`
-      INSERT OR IGNORE INTO credit_transactions (id, owner_id, customer_id, amount, note, created_at) VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(text(row.id, crypto.randomUUID()), owner, text(row.customer_id), integer(row.amount), text(row.note), text(row.created_at, new Date().toISOString())));
+    const customers = customerRows.map((row) => ({
+      id: text(row.id, crypto.randomUUID()), owner_id: user.id, source_user_id: sourceUserId,
+      name: text(row.name, "Tanpa nama"), phone: text(row.phone), created_at: text(row.created_at, now),
+    }));
+    const debts = debtRows.map((row) => ({
+      id: text(row.id, crypto.randomUUID()), owner_id: user.id, customer_id: text(row.customer_id), amount: integer(row.amount),
+      created_at: text(row.created_at, now), date: text(row.date, text(row.created_at, now).slice(0, 10)),
+      invoice_no: text(row.invoice_no), item: text(row.item), cashier: text(row.kasir ?? row.cashier), qty: Math.max(1, integer(row.qty, 1)),
+    }));
+    const payments = paymentRows.map((row) => ({
+      id: text(row.id, crypto.randomUUID()), owner_id: user.id, debt_item_id: text(row.debt_item_id), amount: integer(row.amount),
+      paid_at: text(row.paid_at, now), received_by: text(row.received_by),
+    }));
+    const credits = creditRows.map((row) => ({
+      id: text(row.id, crypto.randomUUID()), owner_id: user.id, customer_id: text(row.customer_id), amount: integer(row.amount),
+      note: text(row.note), created_at: text(row.created_at, now),
+    }));
 
-    const rowCount = customerRows.length + debtRows.length + paymentRows.length + creditRows.length;
-    statements.push(env.DB.prepare(`INSERT INTO import_batches (id, owner_id, fingerprint, exported_at, imported_at, row_count) VALUES (?, ?, ?, ?, ?, ?)`)
-      .bind(crypto.randomUUID(), owner, fingerprint, text(backup.exported_at), new Date().toISOString(), rowCount));
-    await env.DB.batch(statements);
-    return Response.json({ ok: true, duplicate: false, imported: rowCount, counts: { customers: customerRows.length, debts: debtRows.length, payments: paymentRows.length, credits: creditRows.length } });
+    if (customers.length) {
+      const { error } = await supabase.from("customers").upsert(customers, { onConflict: "id", ignoreDuplicates: true });
+      if (error) throw error;
+    }
+    if (debts.length) {
+      const { error } = await supabase.from("debt_items").upsert(debts, { onConflict: "id", ignoreDuplicates: true });
+      if (error) throw error;
+    }
+    if (payments.length) {
+      const { error } = await supabase.from("payments").upsert(payments, { onConflict: "id", ignoreDuplicates: true });
+      if (error) throw error;
+    }
+    if (credits.length) {
+      const { error } = await supabase.from("credit_transactions").upsert(credits, { onConflict: "id", ignoreDuplicates: true });
+      if (error) throw error;
+    }
+
+    const rowCount = customers.length + debts.length + payments.length + credits.length;
+    const { error: importError } = await supabase.from("import_batches").insert({
+      id: crypto.randomUUID(), owner_id: user.id, fingerprint, exported_at: text(backup.exported_at), imported_at: now, row_count: rowCount,
+    });
+    if (importError) throw importError;
+
+    return Response.json({ ok: true, duplicate: false, imported: rowCount, counts: { customers: customers.length, debts: debts.length, payments: payments.length, credits: credits.length } });
   } catch (error) {
     console.error(error);
+    if (error instanceof Error && error.message === "UNAUTHORIZED") return Response.json({ ok: false, message: "Silakan masuk terlebih dahulu." }, { status: 401 });
     const message = error instanceof SyntaxError ? "Berkas bukan JSON yang valid." : "Cadangan belum dapat dipulihkan.";
     return Response.json({ ok: false, message }, { status: 400 });
   }

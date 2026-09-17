@@ -1,70 +1,79 @@
-import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { requireApiUser } from "@/lib/supabase/server";
 
-export const runtime = "edge";
-
-async function ownerId(request: Request) {
-  const user = await getChatGPTUser();
-  if (!user) {
-    const host = new URL(request.url).hostname;
-    if (host === "localhost" || host === "127.0.0.1") return "local-preview";
-    throw new Error("UNAUTHORIZED");
-  }
-  return user.userId;
-}
+type CustomerRow = { id: string; name: string; phone: string; created_at: string };
+type DebtRow = { id: string; customer_id: string; amount: number; created_at: string; date: string; invoice_no: string; item: string; cashier: string; qty: number };
+type PaymentRow = { id: string; debt_item_id: string; amount: number; paid_at: string; received_by: string };
+type CreditRow = { customer_id: string; amount: number };
 
 function jsonError(message: string, status = 400) {
   return Response.json({ ok: false, message }, { status });
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const owner = await ownerId(request);
-    if (!env.DB) return jsonError("Penyimpanan belum tersedia.", 503);
+    const { supabase, user } = await requireApiUser();
+    const [customersResult, debtsResult, paymentsResult, creditsResult, importsResult] = await Promise.all([
+      supabase.from("customers").select("id,name,phone,created_at").eq("owner_id", user.id),
+      supabase.from("debt_items").select("id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty").eq("owner_id", user.id).order("date", { ascending: false }),
+      supabase.from("payments").select("id,debt_item_id,amount,paid_at,received_by").eq("owner_id", user.id).order("paid_at", { ascending: false }),
+      supabase.from("credit_transactions").select("customer_id,amount").eq("owner_id", user.id),
+      supabase.from("import_batches").select("row_count,imported_at").eq("owner_id", user.id),
+    ]);
 
-    const customerRows = await env.DB.prepare(`
-      SELECT c.id, c.name, c.phone, c.created_at,
-        COALESCE(d.total_debt, 0) - COALESCE(p.total_paid, 0) - COALESCE(cr.credit, 0) AS balance,
-        COALESCE(d.debt_count, 0) AS debt_count,
-        d.last_debt_at, p.last_payment_at, COALESCE(p.last_payment_amount, 0) AS last_payment_amount
-      FROM customers c
-      LEFT JOIN (
-        SELECT customer_id, SUM(amount) total_debt, COUNT(*) debt_count, MAX(date) last_debt_at
-        FROM debt_items WHERE owner_id = ? GROUP BY customer_id
-      ) d ON d.customer_id = c.id
-      LEFT JOIN (
-        SELECT di.customer_id, SUM(p.amount) total_paid, MAX(p.paid_at) last_payment_at,
-          (SELECT p2.amount FROM payments p2 JOIN debt_items d2 ON d2.id = p2.debt_item_id
-           WHERE d2.customer_id = di.customer_id AND p2.owner_id = ? ORDER BY p2.paid_at DESC LIMIT 1) last_payment_amount
-        FROM payments p JOIN debt_items di ON di.id = p.debt_item_id
-        WHERE p.owner_id = ? GROUP BY di.customer_id
-      ) p ON p.customer_id = c.id
-      LEFT JOIN (
-        SELECT customer_id, SUM(amount) credit FROM credit_transactions WHERE owner_id = ? GROUP BY customer_id
-      ) cr ON cr.customer_id = c.id
-      WHERE c.owner_id = ?
-      ORDER BY CASE WHEN balance > 0 THEN 0 ELSE 1 END, balance DESC, c.name COLLATE NOCASE
-    `).bind(owner, owner, owner, owner, owner).all();
+    const firstError = customersResult.error ?? debtsResult.error ?? paymentsResult.error ?? creditsResult.error ?? importsResult.error;
+    if (firstError) throw firstError;
 
-    const debtRows = await env.DB.prepare(`
-      SELECT d.id, d.customer_id, d.amount, d.created_at, d.date, d.invoice_no, d.item, d.cashier, d.qty,
-        COALESCE(SUM(p.amount), 0) paid_amount
-      FROM debt_items d LEFT JOIN payments p ON p.debt_item_id = d.id AND p.owner_id = ?
-      WHERE d.owner_id = ? GROUP BY d.id ORDER BY d.date DESC, d.created_at DESC
-    `).bind(owner, owner).all();
+    const customers = (customersResult.data ?? []) as CustomerRow[];
+    const debts = (debtsResult.data ?? []) as DebtRow[];
+    const payments = (paymentsResult.data ?? []) as PaymentRow[];
+    const credits = (creditsResult.data ?? []) as CreditRow[];
+    const debtById = new Map(debts.map((debt) => [debt.id, debt]));
+    const paidByDebt = new Map<string, number>();
 
-    const paymentRows = await env.DB.prepare(`
-      SELECT p.id, p.debt_item_id, d.customer_id, p.amount, p.paid_at, p.received_by
-      FROM payments p JOIN debt_items d ON d.id = p.debt_item_id
-      WHERE p.owner_id = ? ORDER BY p.paid_at DESC
-    `).bind(owner).all();
+    const paymentRows = payments.map((payment) => {
+      const debt = debtById.get(payment.debt_item_id);
+      paidByDebt.set(payment.debt_item_id, (paidByDebt.get(payment.debt_item_id) ?? 0) + Number(payment.amount));
+      return { ...payment, amount: Number(payment.amount), customer_id: debt?.customer_id ?? "" };
+    });
 
-    const importSummary = await env.DB.prepare(`
-      SELECT COUNT(*) import_count, COALESCE(SUM(row_count), 0) row_count, MAX(imported_at) last_import_at
-      FROM import_batches WHERE owner_id = ?
-    `).bind(owner).first();
+    const debtRows = debts.map((debt) => ({
+      ...debt,
+      amount: Number(debt.amount),
+      qty: Number(debt.qty),
+      paid_amount: paidByDebt.get(debt.id) ?? 0,
+    }));
 
-    return Response.json({ ok: true, customers: customerRows.results, debts: debtRows.results, payments: paymentRows.results, importSummary });
+    const customerRows = customers.map((customer) => {
+      const customerDebts = debtRows.filter((debt) => debt.customer_id === customer.id);
+      const customerPayments = paymentRows.filter((payment) => payment.customer_id === customer.id);
+      const credit = credits.filter((row) => row.customer_id === customer.id).reduce((total, row) => total + Number(row.amount), 0);
+      const totalDebt = customerDebts.reduce((total, debt) => total + debt.amount, 0);
+      const totalPaid = customerPayments.reduce((total, payment) => total + payment.amount, 0);
+      return {
+        ...customer,
+        balance: totalDebt - totalPaid - credit,
+        debt_count: customerDebts.length,
+        last_debt_at: customerDebts[0]?.date ?? null,
+        last_payment_at: customerPayments[0]?.paid_at ?? null,
+        last_payment_amount: customerPayments[0]?.amount ?? 0,
+      };
+    }).sort((a, b) => {
+      if ((a.balance > 0) !== (b.balance > 0)) return a.balance > 0 ? -1 : 1;
+      return b.balance - a.balance || a.name.localeCompare(b.name, "id");
+    });
+
+    const imports = importsResult.data ?? [];
+    return Response.json({
+      ok: true,
+      customers: customerRows,
+      debts: debtRows,
+      payments: paymentRows,
+      importSummary: {
+        import_count: imports.length,
+        row_count: imports.reduce((total, row) => total + Number(row.row_count), 0),
+        last_import_at: imports.map((row) => row.imported_at).sort().at(-1) ?? null,
+      },
+    });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return jsonError("Silakan masuk terlebih dahulu.", 401);
     console.error(error);
@@ -74,8 +83,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const owner = await ownerId(request);
-    if (!env.DB) return jsonError("Penyimpanan belum tersedia.", 503);
+    const { supabase, user } = await requireApiUser();
     const body = await request.json() as Record<string, unknown>;
     const action = String(body.action ?? "");
 
@@ -84,8 +92,8 @@ export async function POST(request: Request) {
       const phone = String(body.phone ?? "").trim();
       if (!name) return jsonError("Nama pelanggan wajib diisi.");
       const id = crypto.randomUUID();
-      await env.DB.prepare("INSERT INTO customers (id, owner_id, name, phone, created_at) VALUES (?, ?, ?, ?, ?)")
-        .bind(id, owner, name, phone, new Date().toISOString()).run();
+      const { error } = await supabase.from("customers").insert({ id, owner_id: user.id, name, phone, created_at: new Date().toISOString() });
+      if (error) throw error;
       return Response.json({ ok: true, id });
     }
 
@@ -96,11 +104,9 @@ export async function POST(request: Request) {
       if (!name) return jsonError("Nama pelanggan wajib diisi.");
       if (name.length > 100) return jsonError("Nama pelanggan terlalu panjang.");
       if (phone.length > 30) return jsonError("Nomor WhatsApp terlalu panjang.");
-
-      const result = await env.DB.prepare(
-        "UPDATE customers SET name = ?, phone = ? WHERE id = ? AND owner_id = ?",
-      ).bind(name, phone, customerId, owner).run();
-      if (!result.meta.changes) return jsonError("Pelanggan tidak ditemukan.", 404);
+      const { data, error } = await supabase.from("customers").update({ name, phone }).eq("id", customerId).eq("owner_id", user.id).select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return jsonError("Pelanggan tidak ditemukan.", 404);
       return Response.json({ ok: true, id: customerId });
     }
 
@@ -109,37 +115,30 @@ export async function POST(request: Request) {
       const amount = Math.round(Number(body.amount));
       const item = String(body.item ?? "").trim();
       const date = String(body.date ?? "");
-      const customer = await env.DB.prepare("SELECT id FROM customers WHERE id = ? AND owner_id = ?").bind(customerId, owner).first();
-      if (!customer) return jsonError("Pelanggan tidak ditemukan.", 404);
       if (!Number.isFinite(amount) || amount <= 0 || !item || !date) return jsonError("Lengkapi barang, tanggal, dan nominal piutang.");
+      const { data: customer } = await supabase.from("customers").select("id").eq("id", customerId).eq("owner_id", user.id).maybeSingle();
+      if (!customer) return jsonError("Pelanggan tidak ditemukan.", 404);
       const id = crypto.randomUUID();
-      await env.DB.prepare(`INSERT INTO debt_items
-        (id, owner_id, customer_id, amount, created_at, date, invoice_no, item, cashier, qty)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(id, owner, customerId, amount, new Date().toISOString(), date, String(body.invoiceNo ?? ""), item, String(body.cashier ?? ""), Math.max(1, Math.round(Number(body.qty) || 1))).run();
+      const { error } = await supabase.from("debt_items").insert({
+        id, owner_id: user.id, customer_id: customerId, amount, created_at: new Date().toISOString(), date,
+        invoice_no: String(body.invoiceNo ?? ""), item, cashier: String(body.cashier ?? ""), qty: Math.max(1, Math.round(Number(body.qty) || 1)),
+      });
+      if (error) throw error;
       return Response.json({ ok: true, id });
     }
 
     if (action === "create_payment") {
       const customerId = String(body.customerId ?? "");
-      let remaining = Math.round(Number(body.amount));
-      if (!Number.isFinite(remaining) || remaining <= 0) return jsonError("Nominal pembayaran harus lebih dari nol.");
-      const openDebts = await env.DB.prepare(`
-        SELECT d.id, d.amount - COALESCE(SUM(p.amount), 0) remaining
-        FROM debt_items d LEFT JOIN payments p ON p.debt_item_id = d.id
-        WHERE d.owner_id = ? AND d.customer_id = ? GROUP BY d.id HAVING remaining > 0 ORDER BY d.date ASC
-      `).bind(owner, customerId).all<{ id: string; remaining: number }>();
-      if (!openDebts.results.length) return jsonError("Pelanggan ini tidak mempunyai piutang terbuka.");
-      const statements = [];
-      for (const debt of openDebts.results) {
-        if (remaining <= 0) break;
-        const paid = Math.min(remaining, Number(debt.remaining));
-        statements.push(env.DB.prepare("INSERT INTO payments (id, owner_id, debt_item_id, amount, paid_at, received_by) VALUES (?, ?, ?, ?, ?, ?)")
-          .bind(crypto.randomUUID(), owner, debt.id, paid, new Date().toISOString(), String(body.receivedBy ?? "")));
-        remaining -= paid;
-      }
-      await env.DB.batch(statements);
-      return Response.json({ ok: true, overpayment: remaining });
+      const amount = Math.round(Number(body.amount));
+      if (!Number.isFinite(amount) || amount <= 0) return jsonError("Nominal pembayaran harus lebih dari nol.");
+      const { data, error } = await supabase.rpc("record_customer_payment", {
+        payment_customer_id: customerId,
+        payment_amount: amount,
+        payment_received_by: String(body.receivedBy ?? ""),
+      });
+      if (error) throw error;
+      if (!data?.recorded) return jsonError("Pelanggan ini tidak mempunyai piutang terbuka.");
+      return Response.json({ ok: true, overpayment: Number(data.overpayment ?? 0) });
     }
 
     return jsonError("Tindakan tidak dikenal.");
