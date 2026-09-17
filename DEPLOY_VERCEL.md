@@ -36,5 +36,6 @@ Jika basis data sudah pernah dibuat, jalankan berkas baru di dalam folder `supab
 
 1. `supabase/migrations/20260917_add_cashiers.sql`
 2. `supabase/migrations/20260917_add_multi_item_invoices.sql`
+3. `supabase/migrations/20260917_fix_invoice_date_ambiguity.sql`
 
-Migrasi kedua menambahkan nota otomatis, beberapa barang dalam satu nota, serta harga eceran dan grosir. Jalankan migrasi sebelum menerapkan versi aplikasi yang memakai fitur tersebut.
+Migrasi kedua menambahkan nota otomatis, beberapa barang dalam satu nota, serta harga eceran dan grosir. Migrasi ketiga memperbaiki fungsi penghitung nomor nota pada basis data yang sudah menerima migrasi kedua. Jalankan migrasi secara berurutan sebelum memakai fitur tersebut.

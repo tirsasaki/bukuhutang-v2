@@ -216,7 +216,7 @@ begin
 
   insert into public.invoice_counters (owner_id, invoice_date, last_number)
   values (auth.uid(), invoice_date, 1)
-  on conflict (owner_id, invoice_date)
+  on conflict on constraint invoice_counters_pkey
   do update set last_number = public.invoice_counters.last_number + 1
   returning last_number into invoice_sequence;
 

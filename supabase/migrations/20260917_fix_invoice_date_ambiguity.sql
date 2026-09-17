@@ -1,50 +1,5 @@
 begin;
 
-create table if not exists public.invoice_counters (
-  owner_id uuid not null references auth.users(id) on delete cascade,
-  invoice_date date not null,
-  last_number integer not null default 0,
-  primary key (owner_id, invoice_date)
-);
-
-create table if not exists public.invoices (
-  id text primary key,
-  owner_id uuid not null references auth.users(id) on delete cascade,
-  customer_id text not null,
-  invoice_no text not null,
-  date date not null,
-  cashier text not null default '',
-  total_amount bigint not null check (total_amount > 0),
-  created_at timestamptz not null default now(),
-  unique (id, owner_id),
-  unique (owner_id, invoice_no),
-  foreign key (customer_id, owner_id) references public.customers(id, owner_id) on delete cascade
-);
-
-alter table public.debt_items add column if not exists unit_price bigint;
-alter table public.debt_items add column if not exists wholesale_price bigint;
-alter table public.debt_items add column if not exists price_mode text not null default 'retail';
-alter table public.debt_items add column if not exists invoice_id text;
-alter table public.debt_items drop constraint if exists debt_items_price_mode_check;
-alter table public.debt_items add constraint debt_items_price_mode_check check (price_mode in ('retail', 'wholesale'));
-alter table public.debt_items drop constraint if exists debt_items_invoice_owner_fkey;
-alter table public.debt_items add constraint debt_items_invoice_owner_fkey foreign key (invoice_id, owner_id) references public.invoices(id, owner_id) on delete cascade;
-
-update public.debt_items
-set unit_price = greatest(1, amount / greatest(qty, 1))
-where unit_price is null;
-
-create index if not exists idx_debt_owner_invoice on public.debt_items(owner_id, invoice_id);
-create index if not exists idx_invoices_owner_date on public.invoices(owner_id, date desc);
-
-alter table public.invoice_counters enable row level security;
-alter table public.invoices enable row level security;
-
-drop policy if exists "invoice_counters_owner_only" on public.invoice_counters;
-drop policy if exists "invoices_owner_only" on public.invoices;
-create policy "invoice_counters_owner_only" on public.invoice_counters for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
-create policy "invoices_owner_only" on public.invoices for all to authenticated using (owner_id = auth.uid()) with check (owner_id = auth.uid());
-
 create or replace function public.create_debt_invoice(
   invoice_customer_id text,
   invoice_date date,
