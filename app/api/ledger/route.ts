@@ -3,7 +3,7 @@ import { databaseSetupMessage, isMissingDatabaseSchema } from "@/lib/supabase/er
 
 type CustomerRow = { id: string; name: string; phone: string; created_at: string };
 type DebtRow = { id: string; customer_id: string; amount: number; created_at: string; date: string; invoice_no: string; item: string; cashier: string; qty: number; unit_price: number | null; wholesale_price: number | null; price_mode: "retail" | "wholesale"; invoice_id: string | null };
-type PaymentRow = { id: string; debt_item_id: string; amount: number; paid_at: string; received_by: string };
+type PaymentRow = { id: string; debt_item_id: string; amount: number; paid_at: string; received_by: string; source: "cash" | "credit" };
 type CreditRow = { customer_id: string; amount: number };
 
 function jsonError(message: string, status = 400) {
@@ -16,7 +16,7 @@ export async function GET() {
     const [customersResult, debtsResult, paymentsResult, creditsResult, importsResult, cashiersResult] = await Promise.all([
       supabase.from("customers").select("id,name,phone,created_at").eq("owner_id", user.id),
       supabase.from("debt_items").select("id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty,unit_price,wholesale_price,price_mode,invoice_id").eq("owner_id", user.id).order("date", { ascending: false }),
-      supabase.from("payments").select("id,debt_item_id,amount,paid_at,received_by").eq("owner_id", user.id).order("paid_at", { ascending: false }),
+      supabase.from("payments").select("id,debt_item_id,amount,paid_at,received_by,source").eq("owner_id", user.id).order("paid_at", { ascending: false }),
       supabase.from("credit_transactions").select("customer_id,amount").eq("owner_id", user.id),
       supabase.from("import_batches").select("row_count,imported_at").eq("owner_id", user.id),
       supabase.from("cashiers").select("id,name,phone,is_active").eq("owner_id", user.id).order("name"),
@@ -53,9 +53,11 @@ export async function GET() {
       const credit = credits.filter((row) => row.customer_id === customer.id).reduce((total, row) => total + Number(row.amount), 0);
       const totalDebt = customerDebts.reduce((total, debt) => total + debt.amount, 0);
       const totalPaid = customerPayments.reduce((total, payment) => total + payment.amount, 0);
+      const netBalance = totalDebt - totalPaid - credit;
       return {
         ...customer,
-        balance: totalDebt - totalPaid - credit,
+        balance: Math.max(0, netBalance),
+        credit_balance: Math.max(0, -netBalance),
         debt_count: customerDebts.length,
         last_debt_at: customerDebts[0]?.date ?? null,
         last_payment_at: customerPayments[0]?.paid_at ?? null,
@@ -167,23 +169,32 @@ export async function POST(request: Request) {
     if (action === "create_payment") {
       const customerId = String(body.customerId ?? "");
       const payAll = body.payAll === true || String(body.payAll ?? "") === "true";
-      const amount = payAll ? 0 : Math.round(Number(body.amount));
+      const amount = Math.round(Number(body.amount));
       const receivedBy = String(body.receivedBy ?? "").trim();
-      if (!payAll && (!Number.isSafeInteger(amount) || amount <= 0)) return jsonError("Nominal pembayaran harus lebih dari nol.");
+      if (!Number.isSafeInteger(amount) || amount <= 0) return jsonError("Nominal pembayaran harus lebih dari nol.");
       if (!receivedBy) return jsonError("Pilih kasir yang menerima pembayaran.");
       const { data: activeCashier, error: cashierError } = await supabase.from("cashiers").select("id").eq("owner_id", user.id).eq("name", receivedBy).eq("is_active", true).maybeSingle();
       if (cashierError) throw cashierError;
       if (!activeCashier) return jsonError("Kasir tidak ditemukan atau sudah dinonaktifkan.");
-      const { data, error } = await supabase.rpc("record_customer_payment", {
-        payment_customer_id: customerId,
-        payment_amount: amount,
-        payment_received_by: receivedBy,
-      });
+      const { data, error } = payAll
+        ? await supabase.rpc("settle_customer_debts", {
+            payment_customer_id: customerId,
+            payment_received_amount: amount,
+            payment_received_by: receivedBy,
+          })
+        : await supabase.rpc("record_customer_payment", {
+            payment_customer_id: customerId,
+            payment_amount: amount,
+            payment_received_by: receivedBy,
+          });
       if (error) throw error;
       if (!data?.recorded) return jsonError("Pelanggan ini tidak mempunyai piutang terbuka.");
       return Response.json({
         ok: true,
         paidAmount: Number(data.paidAmount ?? 0),
+        receivedAmount: Number(data.receivedAmount ?? data.paidAmount ?? 0),
+        overpayment: Number(data.overpayment ?? 0),
+        creditUsed: Number(data.creditUsed ?? 0),
         remainingBalance: Number(data.remainingBalance ?? 0),
         settledCount: Number(data.settledCount ?? 0),
       });
