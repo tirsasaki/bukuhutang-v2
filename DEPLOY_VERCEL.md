@@ -32,4 +32,9 @@ Biarkan situs lama tetap aktif sampai pemeriksaan data selesai.
 
 ## Pembaruan skema
 
-Jika basis data sudah pernah dibuat, jalankan berkas baru di dalam folder `supabase/migrations` secara berurutan melalui SQL Editor. Untuk fitur pengaturan kasir, jalankan `supabase/migrations/20260917_add_cashiers.sql` sebelum menerapkan versi aplikasinya.
+Jika basis data sudah pernah dibuat, jalankan berkas baru di dalam folder `supabase/migrations` secara berurutan melalui SQL Editor:
+
+1. `supabase/migrations/20260917_add_cashiers.sql`
+2. `supabase/migrations/20260917_add_multi_item_invoices.sql`
+
+Migrasi kedua menambahkan nota otomatis, beberapa barang dalam satu nota, serta harga eceran dan grosir. Jalankan migrasi sebelum menerapkan versi aplikasi yang memakai fitur tersebut.

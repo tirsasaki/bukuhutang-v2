@@ -2,7 +2,7 @@ import { requireApiUser } from "@/lib/supabase/server";
 import { databaseSetupMessage, isMissingDatabaseSchema } from "@/lib/supabase/errors";
 
 type CustomerRow = { id: string; name: string; phone: string; created_at: string };
-type DebtRow = { id: string; customer_id: string; amount: number; created_at: string; date: string; invoice_no: string; item: string; cashier: string; qty: number };
+type DebtRow = { id: string; customer_id: string; amount: number; created_at: string; date: string; invoice_no: string; item: string; cashier: string; qty: number; unit_price: number | null; wholesale_price: number | null; price_mode: "retail" | "wholesale"; invoice_id: string | null };
 type PaymentRow = { id: string; debt_item_id: string; amount: number; paid_at: string; received_by: string };
 type CreditRow = { customer_id: string; amount: number };
 
@@ -15,7 +15,7 @@ export async function GET() {
     const { supabase, user } = await requireApiUser();
     const [customersResult, debtsResult, paymentsResult, creditsResult, importsResult, cashiersResult] = await Promise.all([
       supabase.from("customers").select("id,name,phone,created_at").eq("owner_id", user.id),
-      supabase.from("debt_items").select("id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty").eq("owner_id", user.id).order("date", { ascending: false }),
+      supabase.from("debt_items").select("id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty,unit_price,wholesale_price,price_mode,invoice_id").eq("owner_id", user.id).order("date", { ascending: false }),
       supabase.from("payments").select("id,debt_item_id,amount,paid_at,received_by").eq("owner_id", user.id).order("paid_at", { ascending: false }),
       supabase.from("credit_transactions").select("customer_id,amount").eq("owner_id", user.id),
       supabase.from("import_batches").select("row_count,imported_at").eq("owner_id", user.id),
@@ -42,6 +42,8 @@ export async function GET() {
       ...debt,
       amount: Number(debt.amount),
       qty: Number(debt.qty),
+      unit_price: debt.unit_price == null ? null : Number(debt.unit_price),
+      wholesale_price: debt.wholesale_price == null ? null : Number(debt.wholesale_price),
       paid_amount: paidByDebt.get(debt.id) ?? 0,
     }));
 
@@ -116,19 +118,50 @@ export async function POST(request: Request) {
 
     if (action === "create_debt") {
       const customerId = String(body.customerId ?? "");
-      const amount = Math.round(Number(body.amount));
-      const item = String(body.item ?? "").trim();
       const date = String(body.date ?? "");
-      if (!Number.isFinite(amount) || amount <= 0 || !item || !date) return jsonError("Lengkapi barang, tanggal, dan nominal piutang.");
-      const { data: customer } = await supabase.from("customers").select("id").eq("id", customerId).eq("owner_id", user.id).maybeSingle();
-      if (!customer) return jsonError("Pelanggan tidak ditemukan.", 404);
-      const id = crypto.randomUUID();
-      const { error } = await supabase.from("debt_items").insert({
-        id, owner_id: user.id, customer_id: customerId, amount, created_at: new Date().toISOString(), date,
-        invoice_no: String(body.invoiceNo ?? ""), item, cashier: String(body.cashier ?? ""), qty: Math.max(1, Math.round(Number(body.qty) || 1)),
+      const cashier = String(body.cashier ?? "").trim();
+      const rawItems = Array.isArray(body.items)
+        ? body.items
+        : [{
+            item: body.item,
+            qty: body.qty ?? 1,
+            unitPrice: Number(body.unitPrice ?? body.amount) / Math.max(1, Number(body.qty) || 1),
+            wholesalePrice: body.wholesalePrice,
+            priceMode: body.priceMode,
+          }];
+
+      if (!customerId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return jsonError("Pelanggan dan tanggal nota wajib diisi.");
+      if (!rawItems.length || rawItems.length > 50) return jsonError("Satu nota harus berisi 1 sampai 50 barang.");
+
+      const items = rawItems.map((raw) => {
+        const value = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+        const item = String(value.item ?? "").trim();
+        const qty = Math.round(Number(value.qty));
+        const unitPrice = Math.round(Number(value.unitPrice));
+        const wholesalePrice = value.wholesalePrice === "" || value.wholesalePrice == null ? null : Math.round(Number(value.wholesalePrice));
+        const priceMode = value.priceMode === "wholesale" ? "wholesale" : "retail";
+        return { item, qty, unitPrice, wholesalePrice, priceMode };
+      });
+
+      const invalidItem = items.find((item) =>
+        !item.item || item.item.length > 200 || !Number.isSafeInteger(item.qty) || item.qty <= 0 || item.qty > 1_000_000 ||
+        !Number.isSafeInteger(item.unitPrice) || item.unitPrice <= 0 ||
+        (item.priceMode === "wholesale" && (!Number.isSafeInteger(item.wholesalePrice) || Number(item.wholesalePrice) <= 0)),
+      );
+      if (invalidItem) return jsonError("Periksa nama barang, jumlah, serta harga eceran atau grosir pada setiap baris.");
+      if (!cashier) return jsonError("Pilih kasir yang mencatat nota ini.");
+      const { data: activeCashier, error: cashierError } = await supabase.from("cashiers").select("id").eq("owner_id", user.id).eq("name", cashier).eq("is_active", true).maybeSingle();
+      if (cashierError) throw cashierError;
+      if (!activeCashier) return jsonError("Kasir tidak ditemukan atau sudah dinonaktifkan.");
+
+      const { data, error } = await supabase.rpc("create_debt_invoice", {
+        invoice_customer_id: customerId,
+        invoice_date: date,
+        invoice_cashier: cashier,
+        invoice_items: items,
       });
       if (error) throw error;
-      return Response.json({ ok: true, id });
+      return Response.json({ ok: true, ...data });
     }
 
     if (action === "create_payment") {

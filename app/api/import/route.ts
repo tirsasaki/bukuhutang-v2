@@ -37,11 +37,16 @@ export async function POST(request: Request) {
       id: text(row.id, crypto.randomUUID()), owner_id: user.id, source_user_id: sourceUserId,
       name: text(row.name, "Tanpa nama"), phone: text(row.phone), created_at: text(row.created_at, now),
     }));
-    const debts = debtRows.map((row) => ({
-      id: text(row.id, crypto.randomUUID()), owner_id: user.id, customer_id: text(row.customer_id), amount: integer(row.amount),
-      created_at: text(row.created_at, now), date: text(row.date, text(row.created_at, now).slice(0, 10)),
-      invoice_no: text(row.invoice_no), item: text(row.item), cashier: text(row.kasir ?? row.cashier), qty: Math.max(1, integer(row.qty, 1)),
-    }));
+    const debts = debtRows.map((row) => {
+      const qty = Math.max(1, integer(row.qty, 1));
+      const amount = integer(row.amount);
+      return {
+        id: text(row.id, crypto.randomUUID()), owner_id: user.id, customer_id: text(row.customer_id), amount,
+        created_at: text(row.created_at, now), date: text(row.date, text(row.created_at, now).slice(0, 10)),
+        invoice_no: text(row.invoice_no), item: text(row.item), cashier: text(row.kasir ?? row.cashier), qty,
+        unit_price: Math.max(1, Math.round(amount / qty)), price_mode: "retail",
+      };
+    });
     const payments = paymentRows.map((row) => ({
       id: text(row.id, crypto.randomUUID()), owner_id: user.id, debt_item_id: text(row.debt_item_id), amount: integer(row.amount),
       paid_at: text(row.paid_at, now), received_by: text(row.received_by),
