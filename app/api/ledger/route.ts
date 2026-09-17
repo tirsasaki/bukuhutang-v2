@@ -166,16 +166,27 @@ export async function POST(request: Request) {
 
     if (action === "create_payment") {
       const customerId = String(body.customerId ?? "");
-      const amount = Math.round(Number(body.amount));
-      if (!Number.isFinite(amount) || amount <= 0) return jsonError("Nominal pembayaran harus lebih dari nol.");
+      const payAll = body.payAll === true || String(body.payAll ?? "") === "true";
+      const amount = payAll ? 0 : Math.round(Number(body.amount));
+      const receivedBy = String(body.receivedBy ?? "").trim();
+      if (!payAll && (!Number.isSafeInteger(amount) || amount <= 0)) return jsonError("Nominal pembayaran harus lebih dari nol.");
+      if (!receivedBy) return jsonError("Pilih kasir yang menerima pembayaran.");
+      const { data: activeCashier, error: cashierError } = await supabase.from("cashiers").select("id").eq("owner_id", user.id).eq("name", receivedBy).eq("is_active", true).maybeSingle();
+      if (cashierError) throw cashierError;
+      if (!activeCashier) return jsonError("Kasir tidak ditemukan atau sudah dinonaktifkan.");
       const { data, error } = await supabase.rpc("record_customer_payment", {
         payment_customer_id: customerId,
         payment_amount: amount,
-        payment_received_by: String(body.receivedBy ?? ""),
+        payment_received_by: receivedBy,
       });
       if (error) throw error;
       if (!data?.recorded) return jsonError("Pelanggan ini tidak mempunyai piutang terbuka.");
-      return Response.json({ ok: true, overpayment: Number(data.overpayment ?? 0) });
+      return Response.json({
+        ok: true,
+        paidAmount: Number(data.paidAmount ?? 0),
+        remainingBalance: Number(data.remainingBalance ?? 0),
+        settledCount: Number(data.settledCount ?? 0),
+      });
     }
 
     return jsonError("Tindakan tidak dikenal.");
