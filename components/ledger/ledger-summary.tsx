@@ -39,7 +39,7 @@ export function LedgerSummary({
         : "Semua pelanggan sudah lunas",
       tone: "border-border/80 bg-card",
       iconTone:
-        "bg-amber-50 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300",
+        "bg-amber-50 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300",
       valueTone: "text-foreground",
     },
     {
@@ -49,8 +49,8 @@ export function LedgerSummary({
       note: `${data.payments.filter((payment) => payment.source !== "credit" && payment.paid_at.slice(0, 7) === new Date().toISOString().slice(0, 7)).length} alokasi pembayaran tunai`,
       tone: "border-border/80 bg-card",
       iconTone:
-        "bg-emerald-50 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300",
-      valueTone: "text-emerald-800 dark:text-emerald-300",
+        "bg-emerald-50 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-300",
+      valueTone: "text-emerald-900 dark:text-emerald-300",
     },
     {
       label: "Catatan dipulihkan",
@@ -59,7 +59,7 @@ export function LedgerSummary({
       note: `${asNumber(data.importSummary?.import_count)} berkas cadangan diimpor`,
       tone: "border-border/80 bg-card",
       iconTone:
-        "bg-sky-50 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300",
+        "bg-sky-50 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300",
       valueTone: "text-foreground",
     },
   ];

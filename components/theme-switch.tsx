@@ -35,7 +35,7 @@ export function ThemeSwitch({ compact = false, className }: Props) {
       <Sun
         className={cn(
           "size-3.5 transition-colors",
-          !dark && "text-amber-500",
+          !dark && "text-amber-900",
         )}
         aria-hidden="true"
       />

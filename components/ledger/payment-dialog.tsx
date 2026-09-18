@@ -91,7 +91,7 @@ export function PaymentDialog({
                     <p className="text-xs text-muted-foreground">
                       Saldo tersimpan
                     </p>
-                    <p className="font-bold text-emerald-700 dark:text-emerald-300">
+                    <p className="font-bold text-emerald-900 dark:text-emerald-300">
                       {rupiah.format(selected?.credit_balance ?? 0)}
                     </p>
                   </div>
