@@ -1,5 +1,16 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { TabsContent } from "@/components/ui/tabs";
 import {
   CalendarDays,
@@ -7,7 +18,7 @@ import {
   FileText,
   PencilLine,
   Phone,
-  ShieldCheck,
+  Trash2,
   UserRound,
   WalletCards,
 } from "lucide-react";
@@ -17,13 +28,20 @@ import type { Customer } from "@/lib/ledger/types";
 type Props = {
   selected: Customer;
   setEditCustomerOpen: (open: boolean) => void;
+  saving: boolean;
+  onDeleteCustomer: () => Promise<void>;
 };
-export function CustomerProfileTab({ selected, setEditCustomerOpen }: Props) {
+export function CustomerProfileTab({
+  selected,
+  setEditCustomerOpen,
+  saving,
+  onDeleteCustomer,
+}: Props) {
   const details = [
     { label: "Nama pelanggan", value: selected.name, icon: UserRound },
     {
       label: "Kontak WhatsApp",
-      value: selected.phone ? "Nomor tersimpan" : "Belum diisi",
+      value: selected.phone || "Belum diisi",
       icon: Phone,
     },
     {
@@ -86,11 +104,49 @@ export function CustomerProfileTab({ selected, setEditCustomerOpen }: Props) {
           </div>
         ))}
       </dl>
-      <p className="mt-4 flex items-start gap-2 text-[11px] leading-5 text-muted-foreground">
-        <ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-        Nomor WhatsApp disembunyikan untuk menjaga privasi. Gunakan Ubah data
-        untuk memperbaruinya.
-      </p>
+      <div className="mt-5 flex flex-col gap-3 rounded-xl border border-destructive/25 bg-destructive/5 p-4 @xl:flex-row @xl:items-center @xl:justify-between">
+        <div>
+          <p className="text-sm font-semibold">Hapus data pelanggan</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Seluruh piutang, pembayaran, dan saldo pelanggan ini akan ikut
+            dihapus.
+          </p>
+        </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="h-8 shrink-0 gap-1.5 rounded-lg text-xs! font-semibold!"
+              disabled={saving}
+            >
+              <Trash2 className="size-3.5" aria-hidden="true" />
+              Hapus pelanggan
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus {selected.name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tindakan ini akan menghapus seluruh piutang, pembayaran, dan
+                saldo milik pelanggan ini secara permanen. Data yang sudah
+                dihapus tidak dapat dipulihkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={saving}>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                disabled={saving}
+                onClick={() => void onDeleteCustomer()}
+              >
+                {saving ? "Menghapus..." : "Ya, hapus pelanggan"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </TabsContent>
   );
 }
