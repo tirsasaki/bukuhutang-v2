@@ -102,7 +102,7 @@ export function LedgerPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground lg:h-screen lg:overflow-hidden">
+    <main className="min-h-screen bg-background text-foreground lg:flex lg:h-dvh lg:min-h-0 lg:flex-col lg:overflow-hidden">
       <Toaster richColors position="top-right" />
       <LedgerHeader
         storeName={data.store.name}
@@ -116,7 +116,7 @@ export function LedgerPage() {
         needsFollowUp={needsFollowUp}
         paidThisMonth={paidThisMonth}
       />
-      <div className="grid lg:h-[calc(100vh-153px)] lg:grid-cols-[400px_minmax(0,1fr)]">
+      <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[400px_minmax(0,1fr)]">
         <CustomerList
           data={data}
           loading={loading}
