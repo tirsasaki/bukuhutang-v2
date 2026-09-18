@@ -24,6 +24,7 @@ type Props = {
   selectedId: string;
   setSelectedId: (id: string) => void;
   setCustomerOpen: (open: boolean) => void;
+  mobileDetailOpen: boolean;
 };
 export function CustomerList({
   data,
@@ -31,6 +32,7 @@ export function CustomerList({
   selectedId,
   setSelectedId,
   setCustomerOpen,
+  mobileDetailOpen,
 }: Props) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -70,7 +72,9 @@ export function CustomerList({
   );
 
   return (
-    <aside className="border-b border-border bg-card lg:overflow-y-auto lg:border-b-0 lg:border-r">
+    <aside
+      className={`${mobileDetailOpen ? "hidden" : "block"} border-b border-border bg-card lg:block lg:overflow-y-auto lg:border-b-0 lg:border-r`}
+    >
       <div className="sticky top-0 z-10 space-y-3 border-b border-border/80 bg-card/95 p-4 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -269,7 +273,7 @@ export function CustomerList({
               key={customer.id}
               aria-pressed={selectedId === customer.id}
               onClick={() => setSelectedId(customer.id)}
-              className={`group relative grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-xl border px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selectedId === customer.id ? "border-primary/20 bg-secondary/80 shadow-xs" : "border-transparent bg-card hover:border-border/80 hover:bg-muted/50"}`}
+              className={`group relative grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl border px-2.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-[380px]:gap-2.5 min-[380px]:px-3 ${selectedId === customer.id ? "border-primary/20 bg-secondary/80 shadow-xs" : "border-transparent bg-card hover:border-border/80 hover:bg-muted/50"}`}
             >
               <span
                 className={`grid size-9 shrink-0 place-items-center rounded-xl text-xs font-bold ${selectedId === customer.id ? "bg-primary text-primary-foreground" : "bg-secondary text-primary"}`}
@@ -299,10 +303,10 @@ export function CustomerList({
                   )}
                 </span>
               </span>
-              <span className="flex min-w-[88px] items-center justify-end gap-1">
+              <span className="flex min-w-0 items-center justify-end gap-1 min-[380px]:min-w-[88px]">
                 <span className="text-right">
                   <span
-                    className={`block text-sm font-bold tracking-tight tabular-nums ${customer.balance > 0 ? "text-foreground" : "text-emerald-900 dark:text-emerald-300"}`}
+                    className={`block text-xs font-bold tracking-tight tabular-nums min-[380px]:text-sm ${customer.balance > 0 ? "text-foreground" : "text-emerald-900 dark:text-emerald-300"}`}
                   >
                     {rupiah.format(customer.balance)}
                   </span>

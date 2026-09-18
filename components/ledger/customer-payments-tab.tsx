@@ -134,7 +134,68 @@ export function CustomerPaymentsTab({
         </div>
       </div>
       {visiblePayments.length > 0 ? (
-        <Table className="min-w-[760px]">
+        <>
+          <div className="space-y-3 bg-muted/20 p-3 @4xl:hidden">
+            {visiblePayments.map((payment) => {
+              const debt = debtById.get(payment.debt_item_id);
+              const price = debt
+                ? ((debt.price_mode === "wholesale"
+                    ? debt.wholesale_price
+                    : debt.unit_price) ??
+                  debt.amount / Math.max(1, debt.qty))
+                : 0;
+              return (
+                <article
+                  key={payment.id}
+                  className="rounded-xl border border-border/70 bg-card p-3 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                      <CalendarDays className="size-3.5" aria-hidden="true" />
+                      {formatDate(payment.paid_at)}
+                    </span>
+                    <span className="shrink-0 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-900 tabular-nums dark:bg-emerald-400/15 dark:text-emerald-300">
+                      + {rupiah.format(payment.amount)}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-start gap-2.5">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
+                      <PackageOpen className="size-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-semibold">
+                        {debt?.item || "Piutang"}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+                        {debt
+                          ? `${debt.qty} × ${rupiah.format(price)}`
+                          : "Rincian lama"}
+                        {debt?.invoice_no ? ` · ${debt.invoice_no}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 border-t border-border/60 pt-3">
+                    {payment.source === "credit" ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge className="rounded-md bg-violet-50 text-[10px] text-violet-900 dark:bg-violet-400/15 dark:text-violet-300">
+                          Saldo pelanggan
+                        </Badge>
+                        <span className="text-[11px] text-muted-foreground">
+                          Kelebihan bayar tersimpan
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">
+                        Pembayaran tunai · diterima oleh {payment.received_by || "kasir tidak dicatat"}
+                      </p>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <div className="hidden @4xl:block">
+            <Table className="min-w-[760px]">
           <caption className="sr-only">
             Riwayat pembayaran, barang terkait, dan sumber pembayaran
             pelanggan.
@@ -229,7 +290,9 @@ export function CustomerPaymentsTab({
               );
             })}
           </TableBody>
-        </Table>
+            </Table>
+          </div>
+        </>
       ) : (
         <div className="grid min-h-56 place-items-center p-8 text-center">
           <div>

@@ -208,7 +208,7 @@ export default function StoreSettingsPage() {
     <main className="min-h-screen bg-muted/40 text-foreground">
       <Toaster richColors position="top-right" />
       <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button asChild variant="ghost" size="icon-sm">
             <Link href="/" aria-label="Kembali ke buku piutang">
               <ArrowLeft className="size-4" />
@@ -217,9 +217,9 @@ export default function StoreSettingsPage() {
           <div className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
             <BookOpenText className="size-5" />
           </div>
-          <div>
-            <p className="font-bold leading-tight">Pengaturan Toko</p>
-            <p className="text-xs text-muted-foreground">{store.name}</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold leading-tight sm:text-base">Pengaturan Toko</p>
+            <p className="truncate text-xs text-muted-foreground">{store.name}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -343,7 +343,55 @@ export default function StoreSettingsPage() {
               <Loader2 className="size-4 animate-spin" /> Membuka daftar kasir…
             </div>
           ) : cashiers.length ? (
-            <Table>
+            <>
+              <div className="space-y-3 p-3 sm:hidden">
+                {cashiers.map((cashier) => (
+                  <article
+                    key={cashier.id}
+                    className="rounded-xl border border-border/70 bg-muted/20 p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words text-sm font-semibold">
+                          {cashier.name}
+                        </p>
+                        <p className="mt-1 break-all text-xs text-muted-foreground">
+                          {cashier.phone || "Nomor WhatsApp belum diisi"}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={cashier.is_active ? "default" : "secondary"}
+                      >
+                        {cashier.is_active ? "Aktif" : "Nonaktif"}
+                      </Badge>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+                      <label className="flex items-center gap-2 text-xs font-medium">
+                        <Switch
+                          checked={cashier.is_active}
+                          onCheckedChange={(checked) =>
+                            void setActive(cashier, checked)
+                          }
+                          aria-label={`${cashier.is_active ? "Nonaktifkan" : "Aktifkan"} ${cashier.name}`}
+                        />
+                        Status kasir
+                      </label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => {
+                          setEditing(cashier);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <PencilLine className="size-3.5" /> Ubah
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <Table className="hidden sm:table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Nama kasir</TableHead>
@@ -391,7 +439,8 @@ export default function StoreSettingsPage() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+              </Table>
+            </>
           ) : (
             <div className="p-12 text-center">
               <UsersRound className="mx-auto size-10 text-muted-foreground" />
