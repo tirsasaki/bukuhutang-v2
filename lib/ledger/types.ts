@@ -64,6 +64,12 @@ export type DebtDraft = {
   priceMode: "retail" | "wholesale";
 };
 export type ShareStyle = "formal" | "detailed" | "friendly";
+export type ShareDisplayOptions = {
+  storeName: boolean;
+  storeAddress: boolean;
+  invoiceNumber: boolean;
+  customerName: boolean;
+};
 
 export type PostAction = (
   payload: Record<string, unknown>,
