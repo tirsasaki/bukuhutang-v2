@@ -81,7 +81,7 @@ export function CustomerDetail({
           </div>
         </div>
       ) : (
-        <div className="@container mx-auto max-w-6xl space-y-5">
+        <div className="@container mx-auto w-full max-w-5xl space-y-5">
           <div className="rounded-2xl border border-border/80 bg-card p-4 @xl:p-5">
             <div className="flex flex-col justify-between gap-5 @4xl:flex-row @4xl:items-center">
               <div className="flex min-w-0 items-start gap-3">
