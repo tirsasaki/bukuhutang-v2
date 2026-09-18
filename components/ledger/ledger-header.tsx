@@ -6,12 +6,9 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   BookOpenText,
   CircleDollarSign,
-  Clock3,
   LogOut,
   Plus,
   Settings2,
-  WalletCards,
-  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,50 +18,38 @@ type Props = {
   hasSelected: boolean;
   openBalance: number;
   needsFollowUp: number;
-  paidThisMonth: number;
-  paymentCountThisMonth: number;
   setDebtOpen: (open: boolean) => void;
 };
-type StatChipProps = {
-  label: string;
-  value: string;
-  note: string;
-  icon: LucideIcon;
-  iconClassName: string;
-  valueClassName: string;
-};
 
-function StatChip({
-  label,
-  value,
-  note,
-  icon: Icon,
-  iconClassName,
-  valueClassName,
-}: StatChipProps) {
+function OpenBalancePill({
+  openBalance,
+  customerCount,
+}: {
+  openBalance: number;
+  customerCount: number;
+}) {
+  const formattedBalance = rupiah.format(openBalance);
+
   return (
-    <div className="min-w-[150px] snap-start rounded-xl bg-background/55 px-2.5 py-1.5 shadow-[0_1px_8px_rgba(15,23,42,0.025)] ring-1 ring-border/40 lg:min-w-0 lg:flex-1 lg:bg-transparent lg:shadow-none lg:ring-0">
-      <div className="flex items-center gap-2">
-        <span
-          className={`grid size-7 shrink-0 place-items-center rounded-full ${iconClassName}`}
+    <div className="flex h-11 max-w-full items-center gap-2.5 rounded-2xl border border-border/45 bg-background/50 px-3 transition-colors duration-200 hover:border-primary/20 hover:bg-background/70 md:h-10 md:px-2.5 lg:ml-3 lg:h-11 lg:px-3">
+      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300">
+        <CircleDollarSign className="size-3.5" aria-hidden="true" />
+      </span>
+      <dl className="flex min-w-0 items-center gap-2 lg:block">
+        <dt className="hidden text-[10px] font-medium text-muted-foreground lg:block">
+          Total belum lunas
+        </dt>
+        <dd
+          className="min-w-[11ch] truncate text-base font-bold tracking-tight text-primary tabular-nums lg:mt-0.5 lg:text-lg"
+          title={formattedBalance}
         >
-          <Icon className="size-3" aria-hidden="true" />
-        </span>
-        <dl className="min-w-0">
-          <dt className="truncate text-[10px] font-medium text-muted-foreground xl:text-[11px]">
-            {label}
-          </dt>
-          <dd
-            className={`truncate text-base font-bold tracking-tight tabular-nums xl:text-lg ${valueClassName}`}
-            title={value}
-          >
-            {value}
-          </dd>
-          <dd className="mt-0.5 hidden truncate text-[9px] text-muted-foreground 2xl:block">
-            {note}
-          </dd>
-        </dl>
-      </div>
+          {formattedBalance}
+        </dd>
+      </dl>
+      <span className="hidden h-5 w-px bg-border/60 xl:block" aria-hidden="true" />
+      <p className="hidden shrink-0 text-[10px] text-muted-foreground xl:block">
+        {customerCount} pelanggan
+      </p>
     </div>
   );
 }
@@ -74,8 +59,6 @@ export function LedgerHeader({
   hasSelected,
   openBalance,
   needsFollowUp,
-  paidThisMonth,
-  paymentCountThisMonth,
   setDebtOpen,
 }: Props) {
   const router = useRouter();
@@ -87,42 +70,11 @@ export function LedgerHeader({
   }
 
   const utilityButton =
-    "size-8 rounded-lg border border-border/60 bg-background/65 text-muted-foreground shadow-none transition-none hover:bg-background/65 hover:text-muted-foreground";
-
-  const stats: StatChipProps[] = [
-    {
-      label: "Total belum lunas",
-      value: rupiah.format(openBalance),
-      note: `${needsFollowUp} pelanggan belum lunas`,
-      icon: CircleDollarSign,
-      iconClassName: "bg-sky-100 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300",
-      valueClassName: "text-primary",
-    },
-    {
-      label: "Perlu ditagih",
-      value: String(needsFollowUp),
-      note: needsFollowUp
-        ? "Pelanggan dengan sisa piutang"
-        : "Semua pelanggan sudah lunas",
-      icon: Clock3,
-      iconClassName:
-        "bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300",
-      valueClassName: "text-amber-900 dark:text-amber-300",
-    },
-    {
-      label: "Pembayaran bulan ini",
-      value: rupiah.format(paidThisMonth),
-      note: `${paymentCountThisMonth} alokasi pembayaran tunai`,
-      icon: WalletCards,
-      iconClassName:
-        "bg-emerald-100 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-300",
-      valueClassName: "text-emerald-900 dark:text-emerald-300",
-    },
-  ];
+    "size-8 rounded-lg border border-border/60 bg-background/65 text-muted-foreground shadow-none transition-colors duration-200 hover:border-border hover:bg-background hover:text-foreground";
 
   return (
-    <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 border-b border-border/60 bg-card/85 px-3 py-1.5 backdrop-blur-xl sm:px-4 lg:h-[72px] lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-3 lg:px-4 lg:py-1.5">
-      <div className="flex min-w-0 items-center gap-2 lg:min-w-[140px]">
+    <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-2 border-b border-border/60 bg-card/85 px-3 py-2 backdrop-blur-xl sm:px-4 md:flex md:h-[68px] md:gap-3 md:py-0 lg:px-5">
+      <div className="flex min-w-0 items-center gap-2 md:shrink-0">
         <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_3px_10px_rgba(11,79,85,0.12)]">
           <BookOpenText className="size-4.5" aria-hidden="true" />
         </div>
@@ -139,33 +91,36 @@ export function LedgerHeader({
         </div>
       </div>
 
-      <div className="col-span-2 row-start-2 -mx-3 flex snap-x snap-mandatory gap-1.5 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-4 sm:px-4 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:mx-0 lg:min-w-0 lg:gap-0 lg:overflow-visible lg:px-0 lg:[&>*+*]:border-l lg:[&>*+*]:border-border/60">
-        {stats.map((stat) => (
-          <StatChip key={stat.label} {...stat} />
-        ))}
+      <div className="col-span-2 row-start-2 min-w-0 md:ml-2 md:shrink-0">
+        <OpenBalancePill
+          openBalance={openBalance}
+          customerCount={needsFollowUp}
+        />
       </div>
+
+      <div className="hidden min-w-0 flex-1 md:block" aria-hidden="true" />
 
       <nav
         aria-label="Tindakan, pengaturan, dan akun"
-        className="col-start-2 row-start-1 flex items-center gap-1 lg:col-start-3 lg:ml-0 lg:border-l lg:border-border/60 lg:pl-2.5"
+        className="col-start-2 row-start-1 flex shrink-0 items-center gap-1 md:border-l md:border-border/60 md:pl-3"
       >
         <Button
           type="button"
           size="icon-sm"
-          className="rounded-lg shadow-none transition-none hover:bg-primary hover:text-primary-foreground 2xl:w-auto 2xl:px-2.5"
+          className="rounded-lg shadow-none transition-colors duration-200 hover:bg-primary/90 hover:text-primary-foreground lg:h-9 lg:w-auto lg:px-3"
           disabled={!hasSelected}
           onClick={() => setDebtOpen(true)}
           aria-label="Catat piutang"
           title="Catat piutang"
         >
           <Plus className="size-4" aria-hidden="true" />
-          <span className="hidden text-xs font-semibold 2xl:inline">
+          <span className="hidden text-xs font-semibold lg:inline">
             Catat piutang
           </span>
         </Button>
         <ThemeSwitch
           compact
-          className="h-8 rounded-lg px-1.5 transition-none hover:bg-card hover:text-muted-foreground"
+          className="h-8 rounded-lg px-1 transition-colors duration-200 [&>svg]:hidden sm:px-1.5 sm:[&>svg]:block"
         />
         <Button asChild variant="ghost" size="icon" className={utilityButton}>
           <Link
