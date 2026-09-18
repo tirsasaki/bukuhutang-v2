@@ -11,10 +11,12 @@ const emptyData: LedgerData = {
   cashiers: [],
   store: { name: "Toko Anda", address: "" },
 };
-export function useLedger() {
-  const [data, setData] = useState<LedgerData>(emptyData);
-  const [selectedId, setSelectedId] = useState("");
-  const [loading, setLoading] = useState(true);
+export function useLedger(initialData?: LedgerData) {
+  const [data, setData] = useState<LedgerData>(initialData ?? emptyData);
+  const [selectedId, setSelectedId] = useState(
+    initialData?.customers[0]?.id ?? "",
+  );
+  const [loading, setLoading] = useState(!initialData);
   const loadData = useCallback(async () => {
     try {
       const response = await fetch("/api/ledger", { cache: "no-store" });
@@ -63,9 +65,10 @@ export function useLedger() {
   }, []);
 
   useEffect(() => {
+    if (initialData) return;
     const timer = window.setTimeout(() => void loadData(), 0);
     return () => window.clearTimeout(timer);
-  }, [loadData]);
+  }, [initialData, loadData]);
 
   const postAction = useCallback(
     async (payload: Record<string, unknown>) => {
