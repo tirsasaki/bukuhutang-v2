@@ -279,7 +279,7 @@ export function BackupSettings({ afterImport }: Props) {
             ) : !githubConfigured ? (
               <div className="flex items-start gap-3 p-4 text-sm">
                 <AlertCircle
-                  className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-300"
+                  className="mt-0.5 size-5 shrink-0 text-amber-900 dark:text-amber-300"
                   aria-hidden="true"
                 />
                 <div>
@@ -356,7 +356,7 @@ export function BackupSettings({ afterImport }: Props) {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              <span className="grid size-9 place-items-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
+              <span className="grid size-9 place-items-center rounded-lg bg-emerald-50 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-300">
                 <Download className="size-4" aria-hidden="true" />
               </span>
               <h3 className="mt-4 text-sm font-bold">Unduh ke perangkat</h3>
@@ -378,7 +378,7 @@ export function BackupSettings({ afterImport }: Props) {
               </Button>
             </div>
             <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              <span className="grid size-9 place-items-center rounded-lg bg-sky-50 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300">
+              <span className="grid size-9 place-items-center rounded-lg bg-sky-50 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300">
                 <RotateCcw className="size-4" aria-hidden="true" />
               </span>
               <h3 className="mt-4 text-sm font-bold">Impor dari perangkat</h3>

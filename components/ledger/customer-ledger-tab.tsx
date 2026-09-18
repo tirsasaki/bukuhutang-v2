@@ -64,7 +64,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
               type="button"
               aria-pressed={filter === "active"}
               onClick={() => setFilter("active")}
-              className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px]! font-semibold! transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filter === "active" ? "bg-card text-amber-800 shadow-sm dark:text-amber-300" : "text-muted-foreground hover:text-foreground"}`}
+              className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px]! font-semibold! transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filter === "active" ? "bg-card text-amber-900 shadow-sm dark:text-amber-300" : "text-muted-foreground hover:text-foreground"}`}
             >
               Aktif
               <span className="rounded bg-muted px-1 tabular-nums">
@@ -171,7 +171,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                             {debt.qty} × {rupiah.format(price)}
                           </span>
                           <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${debt.price_mode === "wholesale" ? "bg-violet-50 text-violet-700" : "bg-muted text-muted-foreground"}`}
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${debt.price_mode === "wholesale" ? "bg-violet-50 text-violet-900" : "bg-muted text-muted-foreground"}`}
                           >
                             {debt.price_mode === "wholesale"
                               ? "Grosir"
@@ -189,7 +189,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                       <TableCell className="text-right text-xs font-semibold tabular-nums">
                         {rupiah.format(debt.amount)}
                       </TableCell>
-                      <TableCell className="text-right text-xs font-medium text-emerald-800 tabular-nums dark:text-emerald-300">
+                      <TableCell className="text-right text-xs font-medium text-emerald-900 tabular-nums dark:text-emerald-300">
                         {rupiah.format(debt.paid_amount)}
                       </TableCell>
                       <TableCell
@@ -199,7 +199,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                       </TableCell>
                       <TableCell className="pr-5 text-right">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ${settled ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300" : partial ? "bg-sky-50 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300" : "bg-amber-50 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300"}`}
+                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ${settled ? "bg-emerald-50 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-300" : partial ? "bg-sky-50 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300" : "bg-amber-50 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300"}`}
                         >
                           {settled ? (
                             <CheckCircle2
@@ -242,7 +242,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                   <TableCell className="text-right text-xs font-bold tabular-nums">
                     {rupiah.format(total)}
                   </TableCell>
-                  <TableCell className="text-right text-xs font-bold text-emerald-800 tabular-nums dark:text-emerald-300">
+                  <TableCell className="text-right text-xs font-bold text-emerald-900 tabular-nums dark:text-emerald-300">
                     {rupiah.format(paid)}
                   </TableCell>
                   <TableCell className="text-right text-sm font-bold text-primary tabular-nums">
