@@ -61,18 +61,17 @@ export function TrendPanel({ data }: Props) {
 
     const totalDebt = daily.reduce((sum, item) => sum + item.debt, 0);
     const totalPayment = daily.reduce((sum, item) => sum + item.payment, 0);
-    const topCustomer = [...data.customers].sort(
+    const rankedCustomers = [...data.customers].sort(
       (a, b) =>
         b.debt_count - a.debt_count ||
-        b.balance - a.balance ||
         a.name.localeCompare(b.name, "id"),
-    )[0];
+    );
     const monthLabel = new Intl.DateTimeFormat("id-ID", {
       month: "long",
       year: "numeric",
     }).format(now);
 
-    return { daily, totalDebt, totalPayment, topCustomer, monthLabel };
+    return { daily, totalDebt, totalPayment, rankedCustomers, monthLabel };
   }, [data.customers, data.debts, data.payments]);
 
   const ticks = [1, 5, 10, 15, 20, 25, 30]
@@ -196,25 +195,46 @@ export function TrendPanel({ data }: Props) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/80 bg-card p-3 shadow-xs">
-          <div className="flex items-start gap-3">
+        <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
+          <div className="flex items-center gap-3 border-b border-border/70 p-3">
             <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
               <UserRound className="size-4" aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Transaksi terbanyak
-              </p>
-              <p className="mt-1 truncate text-sm font-semibold">
-                {trend.topCustomer?.name ?? "Belum ada pelanggan"}
+                Peringkat transaksi
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {trend.topCustomer
-                  ? `${trend.topCustomer.debt_count} transaksi tercatat`
-                  : "Belum ada transaksi piutang"}
+                Terbanyak hingga paling sedikit
               </p>
             </div>
           </div>
+          {trend.rankedCustomers.length ? (
+            <ol className="divide-y divide-border/60">
+              {trend.rankedCustomers.map((customer, index) => (
+                <li
+                  key={customer.id}
+                  className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2.5 px-3 py-2.5"
+                >
+                  <span
+                    className={`grid size-7 place-items-center rounded-lg text-[11px] font-bold tabular-nums ${index === 0 ? "bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300" : "bg-muted text-muted-foreground"}`}
+                  >
+                    {index + 1}
+                  </span>
+                  <span className="truncate text-xs font-semibold">
+                    {customer.name}
+                  </span>
+                  <span className="whitespace-nowrap text-[11px] font-medium tabular-nums text-muted-foreground">
+                    {customer.debt_count} transaksi
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="p-4 text-center text-xs text-muted-foreground">
+              Belum ada pelanggan.
+            </p>
+          )}
         </div>
       </div>
     </aside>
