@@ -52,13 +52,13 @@ export function CustomerDetail({
 }: Props) {
   return (
     <section
-      className={`${mobileDetailOpen ? "block" : "hidden"} min-w-0 overflow-y-auto bg-muted/30 p-3 sm:p-5 lg:block lg:p-6`}
+      className={`${mobileDetailOpen ? "block" : "hidden"} min-w-0 overflow-y-auto bg-muted/30 lg:block`}
     >
       <Button
         type="button"
         variant="ghost"
         size="sm"
-        className="mb-2 -ml-1 gap-1.5 lg:hidden"
+        className="m-3 mb-2 gap-1.5 lg:hidden"
         onClick={onMobileBack}
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
@@ -81,7 +81,7 @@ export function CustomerDetail({
           </div>
         </div>
       ) : (
-        <div className="@container mx-auto w-full max-w-5xl space-y-5">
+        <div className="@container w-full space-y-5">
           <div className="rounded-2xl border border-border/80 bg-card p-4 @xl:p-5">
             <div className="flex flex-col justify-between gap-5 @4xl:flex-row @4xl:items-center">
               <div className="flex min-w-0 items-start gap-3">
