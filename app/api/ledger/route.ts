@@ -202,19 +202,18 @@ export async function POST(request: Request) {
         const item = String(value.item ?? "").trim();
         const qty = Math.round(Number(value.qty));
         const unitPrice = Math.round(Number(value.unitPrice));
-        const wholesalePrice = value.wholesalePrice === "" || value.wholesalePrice == null ? null : Math.round(Number(value.wholesalePrice));
         const discount = value.discount === "" || value.discount == null ? 0 : Math.round(Number(value.discount));
         const priceMode = value.priceMode === "wholesale" ? "wholesale" : "retail";
+        const wholesalePrice = priceMode === "wholesale" ? unitPrice : null;
         return { item, qty, unitPrice, wholesalePrice, discount, priceMode };
       });
 
       const invalidItem = items.find((item) => {
-        const selectedPrice = item.priceMode === "wholesale" ? Number(item.wholesalePrice) : item.unitPrice;
-        const grossAmount = item.qty * selectedPrice;
+        const grossAmount = item.qty * item.unitPrice;
         return !item.item || item.item.length > 200 || !Number.isSafeInteger(item.qty) || item.qty <= 0 || item.qty > 1_000_000 ||
           !Number.isSafeInteger(item.unitPrice) || item.unitPrice <= 0 ||
-          (item.priceMode === "wholesale" && (!Number.isSafeInteger(item.wholesalePrice) || Number(item.wholesalePrice) <= 0)) ||
-          !Number.isSafeInteger(item.discount) || item.discount < 0 || !Number.isSafeInteger(grossAmount) || item.discount >= grossAmount;
+          !Number.isSafeInteger(item.discount) || item.discount < 0 || !Number.isSafeInteger(grossAmount) || item.discount >= grossAmount ||
+          (item.priceMode === "retail" && item.discount !== 0);
       });
       if (invalidItem) return jsonError("Periksa nama barang, jumlah, harga, dan diskon pada setiap baris. Diskon harus lebih kecil dari jumlah harga.");
       if (!cashier) return jsonError("Pilih kasir yang mencatat nota ini.");

@@ -442,9 +442,12 @@ begin
     gross_price := coalesce((item_record->>'wholesalePrice')::bigint, 0);
     item_discount := coalesce((item_record->>'discount')::bigint, 0);
     selected_mode := case when item_record->>'priceMode' = 'wholesale' then 'wholesale' else 'retail' end;
-    selected_price := case when selected_mode = 'wholesale' then gross_price else retail_price end;
+    selected_price := retail_price;
     if item_name = '' or item_qty <= 0 or retail_price <= 0 or selected_price <= 0 or item_discount < 0 or item_discount >= item_qty::bigint * selected_price then
       raise exception 'Lengkapi nama barang, jumlah, harga, dan diskon setiap barang';
+    end if;
+    if selected_mode = 'retail' and item_discount <> 0 then
+      raise exception 'Diskon hanya dapat digunakan untuk harga grosir';
     end if;
     invoice_total := invoice_total + (item_qty::bigint * selected_price) - item_discount;
   end loop;
@@ -468,14 +471,14 @@ begin
     gross_price := coalesce((item_record->>'wholesalePrice')::bigint, 0);
     item_discount := coalesce((item_record->>'discount')::bigint, 0);
     selected_mode := case when item_record->>'priceMode' = 'wholesale' then 'wholesale' else 'retail' end;
-    selected_price := case when selected_mode = 'wholesale' then gross_price else retail_price end;
+    selected_price := retail_price;
     insert into public.debt_items (
       id, owner_id, customer_id, amount, created_at, date, invoice_no, item, cashier, qty,
       unit_price, wholesale_price, price_mode, invoice_id
     ) values (
       gen_random_uuid()::text, auth.uid(), invoice_customer_id, (item_qty::bigint * selected_price) - item_discount, now(), invoice_date,
       generated_invoice_no, item_name, coalesce(invoice_cashier, ''), item_qty, retail_price,
-      nullif(gross_price, 0), selected_mode, generated_invoice_id
+      case when selected_mode = 'wholesale' then retail_price else null end, selected_mode, generated_invoice_id
     );
   end loop;
 

@@ -54,15 +54,14 @@ export function DebtDialog({
       invoiceItems.reduce(
         (summary, row) => {
           const qty = Math.max(0, Math.round(asNumber(row.qty)));
-          const price =
+          const grossAmount = qty * Math.max(0, asNumber(row.unitPrice));
+          const discount =
             row.priceMode === "wholesale"
-              ? asNumber(row.wholesalePrice)
-              : asNumber(row.unitPrice);
-          const grossAmount = qty * Math.max(0, price);
-          const discount = Math.min(
-            grossAmount,
-            Math.max(0, Math.round(asNumber(row.discount))),
-          );
+              ? Math.min(
+                  grossAmount,
+                  Math.max(0, Math.round(asNumber(row.discount))),
+                )
+              : 0;
           return {
             gross: summary.gross + grossAmount,
             discount: summary.discount + discount,
@@ -81,6 +80,52 @@ export function DebtDialog({
     );
   }
 
+  function updatePricing(
+    id: string,
+    values: Partial<DebtDraft>,
+    changed: "base" | "mode" | "discount" | "wholesaleTotal",
+  ) {
+    setInvoiceItems((current) =>
+      current.map((row) => {
+        if (row.id !== id) return row;
+        const next = { ...row, ...values };
+        if (next.priceMode !== "wholesale") {
+          return { ...next, wholesaleTotal: "", discount: "" };
+        }
+
+        const qty = Math.max(0, Math.round(asNumber(next.qty)));
+        const grossAmount = qty * Math.max(0, asNumber(next.unitPrice));
+        if (changed === "wholesaleTotal") {
+          if (next.wholesaleTotal === "") {
+            return { ...next, discount: "" };
+          }
+          const wholesaleTotal = Math.max(
+            0,
+            Math.round(asNumber(next.wholesaleTotal)),
+          );
+          return {
+            ...next,
+            discount: String(Math.max(0, grossAmount - wholesaleTotal)),
+          };
+        }
+
+        const discount = Math.max(
+          0,
+          Math.round(asNumber(next.discount)),
+        );
+        return {
+          ...next,
+          wholesaleTotal:
+            grossAmount > 0 ? String(Math.max(0, grossAmount - discount)) : "",
+          discount:
+            changed === "mode" && row.priceMode !== "wholesale"
+              ? ""
+              : next.discount,
+        };
+      }),
+    );
+  }
+
   async function submitDebtInvoice(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected) return;
@@ -93,11 +138,11 @@ export function DebtDialog({
         date: values.date,
         cashier: values.cashier,
         items: invoiceItems.map(
-          ({ item, qty, unitPrice, wholesalePrice, discount, priceMode }) => ({
+          ({ item, qty, unitPrice, discount, priceMode }) => ({
             item,
             qty,
             unitPrice,
-            wholesalePrice,
+            wholesalePrice: priceMode === "wholesale" ? unitPrice : "",
             discount,
             priceMode,
           }),
@@ -130,8 +175,8 @@ export function DebtDialog({
             <DialogTitle>Catat piutang {selected?.name}</DialogTitle>
             <DialogDescription>
               Tambahkan seluruh barang dalam satu nota. Nomor nota akan dibuat
-              otomatis saat disimpan. Isi diskon nominal untuk harga paket,
-              misalnya diskon Rp1.000 agar 3 × Rp7.000 menjadi Rp20.000.
+              otomatis saat disimpan. Total grosir dan diskon akan tersinkron
+              otomatis, misalnya 3 × Rp7.000 − Rp1.000 = Rp20.000.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5 py-5">
@@ -174,22 +219,18 @@ export function DebtDialog({
                 <span>Jumlah</span>
                 <span>Harga eceran</span>
                 <span>Jenis harga</span>
-                <span>Harga grosir</span>
+                <span>Total grosir</span>
                 <span>Diskon</span>
                 <span className="text-right">Jumlah harga</span>
                 <span />
               </div>
               {invoiceItems.map((row, index) => {
                 const qty = Math.max(0, Math.round(asNumber(row.qty)));
-                const appliedPrice =
+                const grossAmount = qty * Math.max(0, asNumber(row.unitPrice));
+                const discount =
                   row.priceMode === "wholesale"
-                    ? asNumber(row.wholesalePrice)
-                    : asNumber(row.unitPrice);
-                const grossAmount = qty * Math.max(0, appliedPrice);
-                const discount = Math.max(
-                  0,
-                  Math.round(asNumber(row.discount)),
-                );
+                    ? Math.max(0, Math.round(asNumber(row.discount)))
+                    : 0;
                 const subtotal = Math.max(0, grossAmount - discount);
                 return (
                   <div
@@ -222,7 +263,11 @@ export function DebtDialog({
                         id={`qty-${row.id}`}
                         value={row.qty}
                         onChange={(event) =>
-                          updateInvoiceItem(row.id, { qty: event.target.value })
+                          updatePricing(
+                            row.id,
+                            { qty: event.target.value },
+                            "base",
+                          )
                         }
                         type="number"
                         min="1"
@@ -239,9 +284,11 @@ export function DebtDialog({
                         id={`unit-${row.id}`}
                         value={row.unitPrice}
                         onChange={(event) =>
-                          updateInvoiceItem(row.id, {
-                            unitPrice: event.target.value,
-                          })
+                          updatePricing(
+                            row.id,
+                            { unitPrice: event.target.value },
+                            "base",
+                          )
                         }
                         type="number"
                         min="1"
@@ -259,10 +306,14 @@ export function DebtDialog({
                         id={`mode-${row.id}`}
                         value={row.priceMode}
                         onChange={(event) =>
-                          updateInvoiceItem(row.id, {
-                            priceMode: event.target
-                              .value as DebtDraft["priceMode"],
-                          })
+                          updatePricing(
+                            row.id,
+                            {
+                              priceMode: event.target
+                                .value as DebtDraft["priceMode"],
+                            },
+                            "mode",
+                          )
                         }
                         className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                       >
@@ -273,26 +324,29 @@ export function DebtDialog({
                     <div className="space-y-1.5">
                       <Label
                         className="lg:sr-only"
-                        htmlFor={`wholesale-${row.id}`}
+                        htmlFor={`wholesale-total-${row.id}`}
                       >
-                        Harga grosir (Rp)
+                        Total harga grosir (Rp)
                       </Label>
                       <Input
-                        id={`wholesale-${row.id}`}
-                        value={row.wholesalePrice}
+                        id={`wholesale-total-${row.id}`}
+                        value={row.wholesaleTotal}
                         onChange={(event) =>
-                          updateInvoiceItem(row.id, {
-                            wholesalePrice: event.target.value,
-                          })
+                          updatePricing(
+                            row.id,
+                            { wholesaleTotal: event.target.value },
+                            "wholesaleTotal",
+                          )
                         }
                         type="number"
                         min="1"
+                        max={grossAmount > 0 ? grossAmount : undefined}
                         step="1"
                         inputMode="numeric"
                         placeholder={
                           row.priceMode === "wholesale"
                             ? "Wajib diisi"
-                            : "Opsional"
+                            : "Otomatis"
                         }
                         required={row.priceMode === "wholesale"}
                         disabled={row.priceMode !== "wholesale"}
@@ -309,9 +363,11 @@ export function DebtDialog({
                         id={`discount-${row.id}`}
                         value={row.discount}
                         onChange={(event) =>
-                          updateInvoiceItem(row.id, {
-                            discount: event.target.value,
-                          })
+                          updatePricing(
+                            row.id,
+                            { discount: event.target.value },
+                            "discount",
+                          )
                         }
                         type="number"
                         min="0"
@@ -319,6 +375,7 @@ export function DebtDialog({
                         step="1"
                         inputMode="numeric"
                         placeholder="Rp 0"
+                        disabled={row.priceMode !== "wholesale"}
                       />
                     </div>
                     <div className="flex min-h-9 items-center justify-between gap-2 lg:flex-col lg:items-end lg:justify-center lg:gap-0">
@@ -328,9 +385,9 @@ export function DebtDialog({
                       <span className="font-semibold tabular-nums">
                         {rupiah.format(subtotal)}
                       </span>
-                      {discount > 0 && (
+                      {row.priceMode === "wholesale" && discount > 0 && (
                         <span className="text-[10px] text-amber-900 tabular-nums dark:text-amber-300">
-                          Diskon {rupiah.format(discount)}
+                          {rupiah.format(grossAmount)} − {rupiah.format(discount)}
                         </span>
                       )}
                     </div>
