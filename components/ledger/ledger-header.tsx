@@ -21,7 +21,7 @@ type Props = {
   setDebtOpen: (open: boolean) => void;
 };
 
-function OpenBalancePill({
+function OpenBalanceSummary({
   openBalance,
   customerCount,
 }: {
@@ -31,7 +31,7 @@ function OpenBalancePill({
   const formattedBalance = rupiah.format(openBalance);
 
   return (
-    <div className="flex h-11 max-w-full items-center gap-2.5 rounded-2xl border border-border/45 bg-background/50 px-3 transition-colors duration-200 hover:border-primary/20 hover:bg-background/70 md:h-10 md:px-2.5 lg:ml-3 lg:h-11 lg:px-3">
+    <div className="flex min-w-0 items-center gap-2.5 md:justify-end">
       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300">
         <CircleDollarSign className="size-3.5" aria-hidden="true" />
       </span>
@@ -46,8 +46,8 @@ function OpenBalancePill({
           {formattedBalance}
         </dd>
       </dl>
-      <span className="hidden h-5 w-px bg-border/60 xl:block" aria-hidden="true" />
-      <p className="hidden shrink-0 text-[10px] text-muted-foreground xl:block">
+      <span className="hidden h-5 w-px bg-border/60 2xl:block" aria-hidden="true" />
+      <p className="hidden shrink-0 text-[10px] text-muted-foreground 2xl:block">
         {customerCount} pelanggan
       </p>
     </div>
@@ -91,18 +91,16 @@ export function LedgerHeader({
         </div>
       </div>
 
-      <div className="col-span-2 row-start-2 min-w-0 md:ml-2 md:shrink-0">
-        <OpenBalancePill
+      <div className="col-span-2 row-start-2 min-w-0 border-t border-border/50 pt-2 md:ml-auto md:shrink-0 md:border-t-0 md:border-r md:border-border/60 md:pt-0 md:pr-3">
+        <OpenBalanceSummary
           openBalance={openBalance}
           customerCount={needsFollowUp}
         />
       </div>
 
-      <div className="hidden min-w-0 flex-1 md:block" aria-hidden="true" />
-
       <nav
         aria-label="Tindakan, pengaturan, dan akun"
-        className="col-start-2 row-start-1 flex shrink-0 items-center gap-1 md:border-l md:border-border/60 md:pl-3"
+        className="col-start-2 row-start-1 flex shrink-0 items-center gap-1"
       >
         <Button
           type="button"
