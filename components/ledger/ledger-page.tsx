@@ -146,7 +146,7 @@ export function LedgerPage({ initialData }: Props) {
         paidThisMonth={paidThisMonth}
         mobileDetailOpen={mobileDetailOpen}
       />
-      <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,320px)_minmax(280px,340px)_minmax(0,1fr)]">
+      <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)_minmax(280px,340px)]">
         <CustomerList
           data={data}
           loading={loading}
@@ -155,7 +155,6 @@ export function LedgerPage({ initialData }: Props) {
           setCustomerOpen={setCustomerOpen}
           mobileDetailOpen={mobileDetailOpen}
         />
-        <TrendPanel data={data} />
         <CustomerDetail
           key={selected?.id ?? "no-customer"}
           selected={selected}
@@ -174,6 +173,7 @@ export function LedgerPage({ initialData }: Props) {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />
+        <TrendPanel data={data} />
       </div>
       <CustomerDialogs
         customerOpen={customerOpen}
