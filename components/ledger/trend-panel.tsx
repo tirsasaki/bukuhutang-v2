@@ -81,7 +81,7 @@ export function TrendPanel({ data }: Props) {
     .map(String);
 
   return (
-    <aside className="hidden min-w-0 flex-col overflow-y-auto border-r border-border bg-muted/20 lg:flex">
+    <aside className="hidden min-w-0 flex-col overflow-y-auto border-l border-border bg-muted/20 lg:flex">
       <div className="border-b border-border/80 bg-background p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
