@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -50,10 +50,15 @@ export function CustomerLedgerTab({
   );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const activeDebts = selectedDebts.filter(
+  const customerDebts = useMemo(
+    () =>
+      selectedDebts.filter((debt) => debt.customer_id === selected.id),
+    [selected.id, selectedDebts],
+  );
+  const activeDebts = customerDebts.filter(
     (debt) => debt.amount > debt.paid_amount,
   );
-  const visibleDebts = filter === "active" ? activeDebts : selectedDebts;
+  const visibleDebts = filter === "active" ? activeDebts : customerDebts;
   const total = visibleDebts.reduce((sum, debt) => sum + debt.amount, 0);
   const paid = visibleDebts.reduce((sum, debt) => sum + debt.paid_amount, 0);
   const outstanding = visibleDebts.reduce(
@@ -121,7 +126,7 @@ export function CustomerLedgerTab({
         <div>
           <h3 className="text-sm font-bold">Riwayat buku piutang</h3>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {selectedDebts.length} catatan · {openCount} piutang aktif
+            {customerDebts.length} catatan · {openCount} piutang aktif
           </p>
         </div>
         <div className="flex shrink-0 items-center">
@@ -138,7 +143,7 @@ export function CustomerLedgerTab({
             >
               Semua
               <span className="rounded bg-muted px-1 tabular-nums">
-                {selectedDebts.length}
+                {customerDebts.length}
               </span>
             </button>
             <button

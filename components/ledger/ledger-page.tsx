@@ -157,6 +157,7 @@ export function LedgerPage({ initialData }: Props) {
         />
         <TrendPanel data={data} />
         <CustomerDetail
+          key={selected?.id ?? "no-customer"}
           selected={selected}
           selectedDebts={selectedDebts}
           selectedPayments={selectedPayments}

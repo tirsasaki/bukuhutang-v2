@@ -147,6 +147,7 @@ export function CustomerDetail({
           </div>
           <CustomerSummary customer={selected} debts={selectedDebts} />
           <Tabs
+            key={selected.id}
             defaultValue="ledger"
             className="gap-0 overflow-hidden rounded-2xl border border-border/80 bg-card"
           >
