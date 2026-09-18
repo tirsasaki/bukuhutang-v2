@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -30,6 +30,12 @@ type Props = {
   postAction: PostAction;
   activeCashiers: Cashier[];
 };
+type DebtSuccess = {
+  customerName: string;
+  invoiceNo: string;
+  itemCount: number;
+  total: number;
+};
 export function DebtDialog({
   debtOpen,
   setDebtOpen,
@@ -42,6 +48,7 @@ export function DebtDialog({
   const [invoiceItems, setInvoiceItems] = useState<DebtDraft[]>(() => [
     newDebtDraft(),
   ]);
+  const [successInfo, setSuccessInfo] = useState<DebtSuccess | null>(null);
   const invoiceTotal = useMemo(
     () =>
       invoiceItems.reduce((total, row) => {
@@ -82,11 +89,15 @@ export function DebtDialog({
           }),
         ),
       });
-      toast.success(
-        `Piutang ${result.invoiceNo} berhasil ditambahkan · ${rupiah.format(asNumber(result.total))}`,
-      );
+      const savedInvoice: DebtSuccess = {
+        customerName: selected.name,
+        invoiceNo: String(result.invoiceNo ?? ""),
+        itemCount: invoiceItems.length,
+        total: asNumber(result.total),
+      };
       setDebtOpen(false);
       setInvoiceItems([newDebtDraft()]);
+      setSuccessInfo(savedInvoice);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Piutang belum tersimpan.",
@@ -97,8 +108,9 @@ export function DebtDialog({
   }
 
   return (
-    <Dialog open={debtOpen} onOpenChange={setDebtOpen}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-5xl">
+    <>
+      <Dialog open={debtOpen} onOpenChange={setDebtOpen}>
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-5xl">
         <form onSubmit={(event) => void submitDebtInvoice(event)}>
           <DialogHeader>
             <DialogTitle>Catat piutang {selected?.name}</DialogTitle>
@@ -337,7 +349,74 @@ export function DebtDialog({
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={successInfo !== null}
+        onOpenChange={(open) => {
+          if (!open) setSuccessInfo(null);
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          className="overflow-hidden text-center sm:max-w-md"
+        >
+          <div className="mx-auto grid size-16 animate-in place-items-center rounded-full bg-emerald-100 text-emerald-800 duration-500 zoom-in-50 dark:bg-emerald-400/15 dark:text-emerald-300">
+            <CheckCircle2 className="size-9" aria-hidden="true" />
+          </div>
+          <DialogHeader className="items-center text-center sm:text-center">
+            <DialogTitle>Piutang berhasil ditambahkan</DialogTitle>
+            <DialogDescription>
+              Nota baru sudah tersimpan dan langsung masuk ke riwayat piutang.
+            </DialogDescription>
+          </DialogHeader>
+          {successInfo && (
+            <dl className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-muted/30 text-left">
+              <div className="border-b border-r border-border p-3">
+                <dt className="text-[11px] text-muted-foreground">
+                  Pelanggan
+                </dt>
+                <dd className="mt-1 break-words text-sm font-semibold">
+                  {successInfo.customerName}
+                </dd>
+              </div>
+              <div className="border-b border-border p-3">
+                <dt className="text-[11px] text-muted-foreground">
+                  Nomor nota
+                </dt>
+                <dd className="mt-1 break-words text-sm font-semibold">
+                  {successInfo.invoiceNo || "—"}
+                </dd>
+              </div>
+              <div className="border-r border-border p-3">
+                <dt className="text-[11px] text-muted-foreground">
+                  Jumlah barang
+                </dt>
+                <dd className="mt-1 text-sm font-semibold">
+                  {successInfo.itemCount} jenis
+                </dd>
+              </div>
+              <div className="p-3">
+                <dt className="text-[11px] text-muted-foreground">
+                  Total piutang
+                </dt>
+                <dd className="mt-1 text-sm font-semibold tabular-nums text-emerald-900 dark:text-emerald-300">
+                  {rupiah.format(successInfo.total)}
+                </dd>
+              </div>
+            </dl>
+          )}
+          <DialogFooter className="sm:justify-center">
+            <Button
+              type="button"
+              className="min-w-32"
+              onClick={() => setSuccessInfo(null)}
+            >
+              Selesai
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
