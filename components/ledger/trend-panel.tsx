@@ -61,11 +61,13 @@ export function TrendPanel({ data }: Props) {
 
     const totalDebt = daily.reduce((sum, item) => sum + item.debt, 0);
     const totalPayment = daily.reduce((sum, item) => sum + item.payment, 0);
-    const rankedCustomers = [...data.customers].sort(
-      (a, b) =>
-        b.debt_count - a.debt_count ||
-        a.name.localeCompare(b.name, "id"),
-    );
+    const rankedCustomers = [...data.customers]
+      .sort(
+        (a, b) =>
+          b.debt_count - a.debt_count ||
+          a.name.localeCompare(b.name, "id"),
+      )
+      .slice(0, 5);
     const monthLabel = new Intl.DateTimeFormat("id-ID", {
       month: "long",
       year: "numeric",
@@ -205,7 +207,7 @@ export function TrendPanel({ data }: Props) {
                 Peringkat transaksi
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Terbanyak hingga paling sedikit
+                5 pelanggan dengan transaksi terbanyak
               </p>
             </div>
           </div>
