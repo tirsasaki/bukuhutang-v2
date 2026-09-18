@@ -162,7 +162,15 @@ export async function POST(request: Request) {
         invoice_items: items,
       });
       if (error) throw error;
-      return Response.json({ ok: true, ...data });
+      const invoiceId = String(data?.invoiceId ?? "");
+      const { data: createdDebts, error: createdDebtsError } = await supabase
+        .from("debt_items")
+        .select("id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty,unit_price,wholesale_price,price_mode,invoice_id")
+        .eq("owner_id", user.id)
+        .eq("invoice_id", invoiceId)
+        .order("created_at", { ascending: true });
+      if (createdDebtsError) throw createdDebtsError;
+      return Response.json({ ok: true, ...data, debts: createdDebts ?? [] });
     }
 
     if (action === "create_payment") {
