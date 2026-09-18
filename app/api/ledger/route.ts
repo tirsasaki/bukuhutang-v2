@@ -1,10 +1,6 @@
 import { requireApiUser } from "@/lib/supabase/server";
 import { databaseSetupMessage, isMissingDatabaseSchema } from "@/lib/supabase/errors";
-
-type CustomerRow = { id: string; name: string; phone: string; created_at: string };
-type DebtRow = { id: string; customer_id: string; amount: number; created_at: string; date: string; invoice_no: string; item: string; cashier: string; qty: number; unit_price: number | null; wholesale_price: number | null; price_mode: "retail" | "wholesale"; invoice_id: string | null };
-type PaymentRow = { id: string; debt_item_id: string; amount: number; paid_at: string; received_by: string; source: "cash" | "credit" };
-type CreditRow = { customer_id: string; amount: number };
+import { readLedgerData } from "@/lib/ledger/read";
 
 function jsonError(message: string, status = 400) {
   return Response.json({ ok: false, message }, { status });
@@ -12,74 +8,7 @@ function jsonError(message: string, status = 400) {
 
 export async function GET() {
   try {
-    const { supabase, user } = await requireApiUser();
-    const [customersResult, debtsResult, paymentsResult, creditsResult, importsResult, cashiersResult, storeResult] = await Promise.all([
-      supabase.from("customers").select("id,name,phone,created_at").eq("owner_id", user.id),
-      supabase.from("debt_items").select("id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty,unit_price,wholesale_price,price_mode,invoice_id").eq("owner_id", user.id).order("date", { ascending: false }).order("created_at", { ascending: false }),
-      supabase.from("payments").select("id,debt_item_id,amount,paid_at,received_by,source").eq("owner_id", user.id).order("paid_at", { ascending: false }),
-      supabase.from("credit_transactions").select("customer_id,amount").eq("owner_id", user.id),
-      supabase.from("import_batches").select("row_count,imported_at").eq("owner_id", user.id),
-      supabase.from("cashiers").select("id,name,phone,is_active").eq("owner_id", user.id).order("name"),
-      supabase.from("store_settings").select("name,address").eq("owner_id", user.id).maybeSingle(),
-    ]);
-
-    const firstError = customersResult.error ?? debtsResult.error ?? paymentsResult.error ?? creditsResult.error ?? importsResult.error ?? cashiersResult.error ?? storeResult.error;
-    if (firstError) throw firstError;
-
-    const customers = (customersResult.data ?? []) as CustomerRow[];
-    const debts = (debtsResult.data ?? []) as DebtRow[];
-    const payments = (paymentsResult.data ?? []) as PaymentRow[];
-    const credits = (creditsResult.data ?? []) as CreditRow[];
-    const debtById = new Map(debts.map((debt) => [debt.id, debt]));
-    const paidByDebt = new Map<string, number>();
-
-    const paymentRows = payments.map((payment) => {
-      const debt = debtById.get(payment.debt_item_id);
-      paidByDebt.set(payment.debt_item_id, (paidByDebt.get(payment.debt_item_id) ?? 0) + Number(payment.amount));
-      return { ...payment, amount: Number(payment.amount), customer_id: debt?.customer_id ?? "" };
-    });
-
-    const debtRows = debts.map((debt) => ({
-      ...debt,
-      amount: Number(debt.amount),
-      qty: Number(debt.qty),
-      unit_price: debt.unit_price == null ? null : Number(debt.unit_price),
-      wholesale_price: debt.wholesale_price == null ? null : Number(debt.wholesale_price),
-      paid_amount: paidByDebt.get(debt.id) ?? 0,
-    }));
-
-    const customerRows = customers.map((customer) => {
-      const customerDebts = debtRows.filter((debt) => debt.customer_id === customer.id);
-      const customerPayments = paymentRows.filter((payment) => payment.customer_id === customer.id);
-      const credit = credits.filter((row) => row.customer_id === customer.id).reduce((total, row) => total + Number(row.amount), 0);
-      const totalDebt = customerDebts.reduce((total, debt) => total + debt.amount, 0);
-      const totalPaid = customerPayments.reduce((total, payment) => total + payment.amount, 0);
-      return {
-        ...customer,
-        balance: Math.max(0, totalDebt - totalPaid),
-        credit_balance: Math.max(0, credit),
-        debt_count: customerDebts.length,
-        last_debt_at: customerDebts[0]?.date ?? null,
-        last_payment_at: customerPayments[0]?.paid_at ?? null,
-        last_payment_amount: customerPayments[0]?.amount ?? 0,
-        last_activity_at: [customer.created_at, customerDebts[0]?.created_at, customerPayments[0]?.paid_at].filter(Boolean).sort().at(-1) ?? customer.created_at,
-      };
-    }).sort((a, b) => b.last_activity_at.localeCompare(a.last_activity_at));
-
-    const imports = importsResult.data ?? [];
-    return Response.json({
-      ok: true,
-      customers: customerRows,
-      debts: debtRows,
-      payments: paymentRows,
-      cashiers: cashiersResult.data ?? [],
-      store: storeResult.data ?? { name: "Toko Anda", address: "" },
-      importSummary: {
-        import_count: imports.length,
-        row_count: imports.reduce((total, row) => total + Number(row.row_count), 0),
-        last_import_at: imports.map((row) => row.imported_at).sort().at(-1) ?? null,
-      },
-    });
+    return Response.json({ ok: true, ...(await readLedgerData()) });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return jsonError("Silakan masuk terlebih dahulu.", 401);
     console.error(error);
