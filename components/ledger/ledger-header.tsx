@@ -43,19 +43,19 @@ function StatChip({
   valueClassName,
 }: StatChipProps) {
   return (
-    <div className="group min-w-[168px] snap-start rounded-2xl bg-background/55 px-3 py-2 shadow-[0_1px_10px_rgba(15,23,42,0.025)] ring-1 ring-border/45 transition-all duration-200 hover:-translate-y-0.5 hover:bg-background/80 hover:shadow-[0_5px_18px_rgba(15,23,42,0.07)] hover:ring-primary/20 lg:min-w-0 lg:flex-1 lg:bg-transparent lg:shadow-none lg:ring-0 lg:hover:bg-background/45 lg:hover:shadow-none">
-      <div className="flex items-center gap-2.5">
+    <div className="min-w-[150px] snap-start rounded-xl bg-background/55 px-2.5 py-1.5 shadow-[0_1px_8px_rgba(15,23,42,0.025)] ring-1 ring-border/40 lg:min-w-0 lg:flex-1 lg:bg-transparent lg:shadow-none lg:ring-0">
+      <div className="flex items-center gap-2">
         <span
-          className={`grid size-8 shrink-0 place-items-center rounded-full ${iconClassName}`}
+          className={`grid size-7 shrink-0 place-items-center rounded-full ${iconClassName}`}
         >
-          <Icon className="size-3.5" aria-hidden="true" />
+          <Icon className="size-3" aria-hidden="true" />
         </span>
         <dl className="min-w-0">
           <dt className="truncate text-[10px] font-medium text-muted-foreground xl:text-[11px]">
             {label}
           </dt>
           <dd
-            className={`mt-0.5 truncate text-lg font-bold tracking-tight tabular-nums xl:text-xl 2xl:text-2xl ${valueClassName}`}
+            className={`truncate text-base font-bold tracking-tight tabular-nums xl:text-lg ${valueClassName}`}
             title={value}
           >
             {value}
@@ -87,7 +87,7 @@ export function LedgerHeader({
   }
 
   const utilityButton =
-    "size-9 rounded-xl border border-border/60 bg-background/65 text-muted-foreground shadow-none transition-all hover:-translate-y-0.5 hover:border-primary/20 hover:bg-background hover:text-primary hover:shadow-sm";
+    "size-8 rounded-lg border border-border/60 bg-background/65 text-muted-foreground shadow-none transition-none hover:bg-background/65 hover:text-muted-foreground";
 
   const stats: StatChipProps[] = [
     {
@@ -121,17 +121,17 @@ export function LedgerHeader({
   ];
 
   return (
-    <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-border/60 bg-card/85 px-3 py-2 backdrop-blur-xl sm:px-4 lg:h-[84px] lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-4 lg:px-5 lg:py-2">
-      <div className="flex min-w-0 items-center gap-2.5 lg:min-w-[150px]">
-        <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_5px_16px_rgba(11,79,85,0.16)]">
-          <BookOpenText className="size-5" aria-hidden="true" />
+    <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 border-b border-border/60 bg-card/85 px-3 py-1.5 backdrop-blur-xl sm:px-4 lg:h-[72px] lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-3 lg:px-4 lg:py-1.5">
+      <div className="flex min-w-0 items-center gap-2 lg:min-w-[140px]">
+        <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_3px_10px_rgba(11,79,85,0.12)]">
+          <BookOpenText className="size-4.5" aria-hidden="true" />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold leading-tight tracking-tight sm:text-base">
+          <p className="truncate text-sm font-bold leading-tight tracking-tight">
             Buku Piutang
           </p>
           <p
-            className="mt-1 truncate text-[11px] text-muted-foreground"
+            className="mt-0.5 truncate text-[10px] text-muted-foreground"
             title={storeName}
           >
             {storeName}
@@ -139,7 +139,7 @@ export function LedgerHeader({
         </div>
       </div>
 
-      <div className="col-span-2 row-start-2 -mx-3 flex snap-x snap-mandatory gap-2 overflow-x-auto px-3 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-4 sm:px-4 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:mx-0 lg:min-w-0 lg:gap-0 lg:overflow-visible lg:px-0 lg:pb-0 lg:[&>*+*]:border-l lg:[&>*+*]:border-border/60">
+      <div className="col-span-2 row-start-2 -mx-3 flex snap-x snap-mandatory gap-1.5 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-4 sm:px-4 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:mx-0 lg:min-w-0 lg:gap-0 lg:overflow-visible lg:px-0 lg:[&>*+*]:border-l lg:[&>*+*]:border-border/60">
         {stats.map((stat) => (
           <StatChip key={stat.label} {...stat} />
         ))}
@@ -147,12 +147,12 @@ export function LedgerHeader({
 
       <nav
         aria-label="Tindakan, pengaturan, dan akun"
-        className="col-start-2 row-start-1 flex items-center gap-1.5 lg:col-start-3 lg:ml-0 lg:border-l lg:border-border/60 lg:pl-3"
+        className="col-start-2 row-start-1 flex items-center gap-1 lg:col-start-3 lg:ml-0 lg:border-l lg:border-border/60 lg:pl-2.5"
       >
         <Button
           type="button"
-          size="icon"
-          className="size-9 rounded-xl shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md 2xl:w-auto 2xl:px-3"
+          size="icon-sm"
+          className="rounded-lg shadow-none transition-none hover:bg-primary hover:text-primary-foreground 2xl:w-auto 2xl:px-2.5"
           disabled={!hasSelected}
           onClick={() => setDebtOpen(true)}
           aria-label="Catat piutang"
@@ -163,7 +163,10 @@ export function LedgerHeader({
             Catat piutang
           </span>
         </Button>
-        <ThemeSwitch compact />
+        <ThemeSwitch
+          compact
+          className="h-8 rounded-lg px-1.5 transition-none hover:bg-card hover:text-muted-foreground"
+        />
         <Button asChild variant="ghost" size="icon" className={utilityButton}>
           <Link
             href="/pengaturan"
@@ -177,7 +180,7 @@ export function LedgerHeader({
           type="button"
           variant="ghost"
           size="icon"
-          className={`${utilityButton} hover:border-destructive/20 hover:bg-destructive/5 hover:text-destructive`}
+          className={utilityButton}
           aria-label="Keluar dari akun"
           title="Keluar dari akun"
           onClick={() => void signOut()}
