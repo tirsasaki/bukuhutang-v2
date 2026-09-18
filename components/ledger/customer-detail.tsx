@@ -176,6 +176,7 @@ export function CustomerDetail({
               selectedDebts={selectedDebts}
             />
             <CustomerPaymentsTab
+              key={selected.id}
               selectedPayments={selectedPayments}
               selectedDebts={selectedDebts}
             />
