@@ -78,7 +78,7 @@ export function CustomerProfileTab({ selected, setEditCustomerOpen }: Props) {
             <div className="min-w-0">
               <dt className="text-[11px] text-muted-foreground">{label}</dt>
               <dd
-                className={`mt-1 break-words text-sm font-semibold ${label === "Saldo kelebihan bayar" ? "text-emerald-800 tabular-nums" : ""}`}
+                className={`mt-1 break-words text-sm font-semibold ${label === "Saldo kelebihan bayar" ? "text-emerald-800 tabular-nums dark:text-emerald-300" : ""}`}
               >
                 {value}
               </dd>

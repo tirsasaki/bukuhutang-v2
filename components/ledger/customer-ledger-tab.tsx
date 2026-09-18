@@ -160,7 +160,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                       <TableCell className="text-right text-xs font-semibold tabular-nums">
                         {rupiah.format(debt.amount)}
                       </TableCell>
-                      <TableCell className="text-right text-xs font-medium text-emerald-800 tabular-nums">
+                      <TableCell className="text-right text-xs font-medium text-emerald-800 tabular-nums dark:text-emerald-300">
                         {rupiah.format(debt.paid_amount)}
                       </TableCell>
                       <TableCell
@@ -170,7 +170,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                       </TableCell>
                       <TableCell className="pr-5 text-right">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ${settled ? "bg-emerald-50 text-emerald-800" : partial ? "bg-sky-50 text-sky-800" : "bg-amber-50 text-amber-800"}`}
+                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ${settled ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300" : partial ? "bg-sky-50 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300" : "bg-amber-50 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300"}`}
                         >
                           {settled ? (
                             <CheckCircle2
@@ -213,7 +213,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                   <TableCell className="text-right text-xs font-bold tabular-nums">
                     {rupiah.format(total)}
                   </TableCell>
-                  <TableCell className="text-right text-xs font-bold text-emerald-800 tabular-nums">
+                  <TableCell className="text-right text-xs font-bold text-emerald-800 tabular-nums dark:text-emerald-300">
                     {rupiah.format(paid)}
                   </TableCell>
                   <TableCell className="text-right text-sm font-bold text-primary tabular-nums">

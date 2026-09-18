@@ -74,7 +74,7 @@ export function CustomerDetail({
                       {selected.name}
                     </h2>
                     <span
-                      className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ${selected.balance > 0 ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-800"}`}
+                      className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ${selected.balance > 0 ? "bg-amber-50 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300" : "bg-emerald-50 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300"}`}
                     >
                       {selected.balance > 0 ? (
                         <Clock3 className="size-3" aria-hidden="true" />

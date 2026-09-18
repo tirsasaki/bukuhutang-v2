@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 import { useLedger } from "@/hooks/use-ledger";
 import { useLedgerTools } from "@/hooks/use-ledger-tools";

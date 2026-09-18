@@ -142,8 +142,8 @@ export function CustomerList({
                 icon: Clock3,
                 count: data.customers.filter((customer) => customer.balance > 0)
                   .length,
-                activeClass: "text-amber-800",
-                iconClass: "text-amber-600",
+                activeClass: "text-amber-800 dark:text-amber-300",
+                iconClass: "text-amber-600 dark:text-amber-300",
               },
               {
                 id: "paid",
@@ -152,8 +152,8 @@ export function CustomerList({
                 count: data.customers.filter(
                   (customer) => customer.balance <= 0,
                 ).length,
-                activeClass: "text-emerald-800",
-                iconClass: "text-emerald-600",
+                activeClass: "text-emerald-800 dark:text-emerald-300",
+                iconClass: "text-emerald-600 dark:text-emerald-300",
               },
             ] as const
           ).map(({ icon: Icon, ...filter }) => (
@@ -293,7 +293,7 @@ export function CustomerList({
                     Aktif {formatDate(customer.last_activity_at)}
                   </span>
                   {customer.credit_balance > 0 && (
-                    <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
                       Saldo {rupiah.format(customer.credit_balance)}
                     </span>
                   )}
@@ -302,12 +302,12 @@ export function CustomerList({
               <span className="flex min-w-[88px] items-center justify-end gap-1">
                 <span className="text-right">
                   <span
-                    className={`block text-sm font-bold tracking-tight tabular-nums ${customer.balance > 0 ? "text-foreground" : "text-emerald-700"}`}
+                    className={`block text-sm font-bold tracking-tight tabular-nums ${customer.balance > 0 ? "text-foreground" : "text-emerald-700 dark:text-emerald-300"}`}
                   >
                     {rupiah.format(customer.balance)}
                   </span>
                   <span
-                    className={`mt-1 block text-[10px] font-medium ${customer.balance > 0 ? "text-amber-700" : "text-emerald-700"}`}
+                    className={`mt-1 block text-[10px] font-medium ${customer.balance > 0 ? "text-amber-700 dark:text-amber-300" : "text-emerald-700 dark:text-emerald-300"}`}
                   >
                     {customer.balance > 0 ? "Belum lunas" : "Lunas"}
                   </span>
