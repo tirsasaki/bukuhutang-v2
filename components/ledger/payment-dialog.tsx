@@ -91,7 +91,7 @@ export function PaymentDialog({
                     <p className="text-xs text-muted-foreground">
                       Saldo tersimpan
                     </p>
-                    <p className="font-bold text-emerald-700">
+                    <p className="font-bold text-emerald-700 dark:text-emerald-300">
                       {rupiah.format(selected?.credit_balance ?? 0)}
                     </p>
                   </div>
@@ -135,7 +135,7 @@ export function PaymentDialog({
               </button>
             </div>
             {(selected?.credit_balance ?? 0) > 0 && (
-              <div className="rounded-xl border border-emerald-700/20 p-3">
+              <div className="rounded-xl border border-emerald-700/20 p-3 dark:border-emerald-300/25">
                 <button
                   type="button"
                   onClick={() => {
@@ -164,7 +164,7 @@ export function PaymentDialog({
                     </span>
                   </span>
                   <span
-                    className={`h-5 w-9 rounded-full p-0.5 transition-colors ${useCredit ? "bg-emerald-700" : "bg-muted"}`}
+                    className={`h-5 w-9 rounded-full p-0.5 transition-colors ${useCredit ? "bg-emerald-700 dark:bg-emerald-400" : "bg-muted"}`}
                   >
                     <span
                       className={`block size-4 rounded-full bg-white transition-transform ${useCredit ? "translate-x-4" : ""}`}

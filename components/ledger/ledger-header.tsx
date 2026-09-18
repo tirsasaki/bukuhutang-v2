@@ -1,5 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { ThemeSwitch } from "@/components/theme-switch";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { BookOpenText, LogOut, Plus, Settings2 } from "lucide-react";
 import Link from "next/link";
@@ -55,6 +56,7 @@ export function LedgerHeader({ storeName, hasSelected, setDebtOpen }: Props) {
         aria-label="Pengaturan dan akun"
         className="col-start-2 row-start-1 flex items-center gap-1.5 sm:ml-1 sm:border-l sm:border-border/80 sm:pl-3"
       >
+        <ThemeSwitch compact />
         <Button asChild variant="ghost" size="icon" className={utilityButton}>
           <Link
             href="/pengaturan"

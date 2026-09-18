@@ -121,7 +121,7 @@ export function ShareDialog({
             />
           </div>
           {!selected?.phone && (
-            <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+            <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-400/15 dark:text-amber-200">
               Nomor WhatsApp pelanggan belum diisi. Rincian tetap dapat disalin.
             </p>
           )}

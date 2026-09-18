@@ -13,7 +13,7 @@ import {
   Store,
   UsersRound,
 } from "lucide-react";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BackupSettings } from "@/components/settings/backup-settings";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { Toaster } from "@/components/ui/sonner";
 
 type Cashier = {
   id: string;
@@ -220,15 +222,19 @@ export default function StoreSettingsPage() {
             <p className="text-xs text-muted-foreground">{store.name}</p>
           </div>
         </div>
-        <Button
-          className="gap-2"
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="size-4" /> Tambah kasir
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeSwitch compact />
+          <Button
+            className="gap-2"
+            onClick={() => {
+              setEditing(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">Tambah kasir</span>
+          </Button>
+        </div>
       </header>
 
       <div className="mx-auto max-w-5xl p-4 lg:p-8">

@@ -26,11 +26,11 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
             Semua pembayaran tunai dan penggunaan saldo pelanggan.
           </p>
         </div>
-        <div className="rounded-lg bg-emerald-50 px-3 py-2 text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+        <div className="rounded-lg bg-emerald-50 px-3 py-2 text-right dark:bg-emerald-400/15">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
             Total pembayaran
           </p>
-          <p className="text-sm font-bold text-emerald-900 tabular-nums">
+          <p className="text-sm font-bold text-emerald-900 tabular-nums dark:text-emerald-200">
             {rupiah.format(
               selectedPayments.reduce(
                 (total, payment) => total + payment.amount,
@@ -91,7 +91,7 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
                   )}
                 </TableCell>
                 <TableCell className="pr-5 text-right">
-                  <span className="inline-flex rounded-lg bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800 tabular-nums">
+                  <span className="inline-flex rounded-lg bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800 tabular-nums dark:bg-emerald-400/15 dark:text-emerald-300">
                     + {rupiah.format(payment.amount)}
                   </span>
                 </TableCell>

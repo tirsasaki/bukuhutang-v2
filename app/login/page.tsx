@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { ThemeSwitch } from "@/components/theme-switch";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,7 @@ export default function LoginPage() {
 
   return (
     <main className="grid min-h-screen place-items-center bg-muted/40 px-4 py-10">
+      <ThemeSwitch className="fixed right-4 top-4" />
       <section className="w-full max-w-md rounded-3xl border border-border bg-card p-7 shadow-xl shadow-primary/5 sm:p-9">
         <div className="mb-8 flex items-center gap-3">
           <div className="grid size-11 place-items-center rounded-2xl bg-primary text-primary-foreground">

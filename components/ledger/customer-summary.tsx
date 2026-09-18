@@ -73,7 +73,7 @@ export function CustomerSummary({ customer, debts }: Props) {
             aria-hidden="true"
           />
         </div>
-        <p className="mt-3 break-words text-xl font-bold tracking-tight text-emerald-800 tabular-nums">
+        <p className="mt-3 break-words text-xl font-bold tracking-tight text-emerald-800 tabular-nums dark:text-emerald-300">
           {customer.last_payment_at
             ? rupiah.format(customer.last_payment_amount)
             : "Belum ada"}
