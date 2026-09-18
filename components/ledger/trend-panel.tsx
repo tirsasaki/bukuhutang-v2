@@ -67,7 +67,7 @@ export function TrendPanel({ data }: Props) {
           b.debt_count - a.debt_count ||
           a.name.localeCompare(b.name, "id"),
       )
-      .slice(0, 5);
+      .slice(0, 8);
     const monthLabel = new Intl.DateTimeFormat("id-ID", {
       month: "long",
       year: "numeric",
@@ -204,10 +204,10 @@ export function TrendPanel({ data }: Props) {
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Peringkat transaksi
+                Peringkat piutang
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                5 pelanggan dengan transaksi terbanyak
+                8 pelanggan dengan catatan piutang terbanyak
               </p>
             </div>
           </div>
@@ -227,7 +227,7 @@ export function TrendPanel({ data }: Props) {
                     {customer.name}
                   </span>
                   <span className="whitespace-nowrap text-[11px] font-medium tabular-nums text-muted-foreground">
-                    {customer.debt_count} transaksi
+                    {customer.debt_count} piutang
                   </span>
                 </li>
               ))}
