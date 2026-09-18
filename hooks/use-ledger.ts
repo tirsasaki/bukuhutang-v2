@@ -13,9 +13,7 @@ const emptyData: LedgerData = {
 };
 export function useLedger(initialData?: LedgerData) {
   const [data, setData] = useState<LedgerData>(initialData ?? emptyData);
-  const [selectedId, setSelectedId] = useState(
-    initialData?.customers[0]?.id ?? "",
-  );
+  const [selectedId, setSelectedId] = useState("");
   const [loading, setLoading] = useState(!initialData);
   const loadData = useCallback(async () => {
     try {
@@ -53,7 +51,7 @@ export function useLedger(initialData?: LedgerData) {
         current &&
         normalized.customers.some((customer) => customer.id === current)
           ? current
-          : (normalized.customers[0]?.id ?? ""),
+          : "",
       );
     } catch (error) {
       toast.error(

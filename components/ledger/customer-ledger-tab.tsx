@@ -277,11 +277,20 @@ export function CustomerLedgerTab({
             tabIndex={0}
             className="hidden overflow-x-auto [&>[data-slot=table-container]]:overflow-visible focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring @4xl:block"
           >
-            <Table className="min-w-[780px]">
+            <Table className="min-w-[820px] table-auto">
               <caption className="sr-only">
                 Rincian piutang {selected.name}: nota, barang, nilai,
                 pembayaran, dan sisa tagihan.
               </caption>
+              <colgroup>
+                <col className="w-12" />
+                <col className="w-px" />
+                <col />
+                <col className="w-px" />
+                <col className="w-px" />
+                <col className="w-px" />
+                <col className="w-px" />
+              </colgroup>
               <TableHeader className="border-b border-border/70 bg-muted/50">
                 <TableRow className="hover:bg-transparent">
                   <TableHead scope="col" className="w-12 pl-5">
@@ -301,37 +310,37 @@ export function CustomerLedgerTab({
                   </TableHead>
                   <TableHead
                     scope="col"
-                    className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                    className="w-px text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                   >
                     Nota / tanggal
                   </TableHead>
                   <TableHead
                     scope="col"
-                    className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                    className="w-full text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                   >
                     Barang / rincian
                   </TableHead>
                   <TableHead
                     scope="col"
-                    className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                    className="w-px text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                   >
                     Nilai piutang
                   </TableHead>
                   <TableHead
                     scope="col"
-                    className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                    className="w-px text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                   >
                     Terbayar
                   </TableHead>
                   <TableHead
                     scope="col"
-                    className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                    className="w-px text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                   >
                     Sisa tagihan
                   </TableHead>
                   <TableHead
                     scope="col"
-                    className="pr-5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                    className="w-px pr-5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                   >
                     Status
                   </TableHead>
@@ -380,7 +389,7 @@ export function CustomerLedgerTab({
                           {formatDate(debt.date)}
                         </p>
                       </TableCell>
-                      <TableCell className="max-w-[320px] min-w-[200px] py-4 whitespace-normal">
+                      <TableCell className="w-full min-w-[220px] py-4 whitespace-normal">
                         <p className="break-words text-sm font-semibold">
                           {debt.item || "Piutang"}
                         </p>
