@@ -11,21 +11,36 @@ Aplikasi menggunakan Supabase untuk basis data dan proses masuk. Rahasia tidak d
 
 Pendaftaran pengguna tidak tersedia dari aplikasi. Pengguna baru hanya dibuat oleh pemilik melalui dasbor Supabase.
 
-## 2. Siapkan Vercel
+## 2. Hubungkan repositori cadangan GitHub
+
+1. Buat fine-grained personal access token di GitHub.
+2. Batasi akses token hanya ke repositori privat `tirsasaki/bukuhutang-backup`.
+3. Berikan izin **Contents: Read and write**. Izin lain tidak diperlukan.
+4. Simpan token untuk dimasukkan sebagai variabel lingkungan Vercel. Jangan
+   menaruh token di berkas atau kode sumber.
+
+Cadangan baru disimpan di `backups/{id-pengguna}/` agar riwayat setiap akun
+terpisah. Berkas lama `backups/{id-pengguna}.json` tetap dapat dipulihkan.
+
+## 3. Siapkan Vercel
 
 1. Impor repositori `tirsasaki/bukuhutang-v2` ke Vercel.
 2. Tambahkan variabel berikut untuk lingkungan Production dan Preview:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `GITHUB_BACKUP_TOKEN`
+   - `GITHUB_BACKUP_REPOSITORY` dengan nilai `tirsasaki/bukuhutang-backup`
+   - `GITHUB_BACKUP_BRANCH` dengan nilai `main`
 3. Jalankan penerapan ulang setelah variabel disimpan.
 
 Nilai pada `.env.example` hanya contoh. Jangan memasukkan nilai asli ke GitHub.
 
-## 3. Pulihkan data
+## 4. Pulihkan data
 
 1. Masuk ke situs Vercel menggunakan akun yang dibuat di Supabase.
-2. Pilih **Impor cadangan**.
-3. Unggah berkas JSON dari repositori cadangan privat.
+2. Buka **Pengaturan Toko → Cadangan data**.
+3. Pilih **Pulihkan** pada cadangan GitHub atau gunakan **Pilih berkas JSON**
+   untuk memulihkan cadangan dari perangkat.
 4. Cocokkan jumlah pelanggan, piutang, pembayaran, dan total saldo dengan situs lama sebelum memindahkan pemakaian harian.
 
 Biarkan situs lama tetap aktif sampai pemeriksaan data selesai.
