@@ -1,9 +1,21 @@
 import { receiptDate, receiptNumber, receiptRow, rupiah } from "./format";
-import type { Customer, Debt, ShareStyle, StoreInformation } from "./types";
+import type {
+  Customer,
+  Debt,
+  ShareDisplayOptions,
+  ShareStyle,
+  StoreInformation,
+} from "./types";
 export function buildShareMessages(
   selected: Customer | null,
   selectedDebts: Debt[],
   store: StoreInformation,
+  options: ShareDisplayOptions = {
+    storeName: true,
+    storeAddress: true,
+    invoiceNumber: true,
+    customerName: true,
+  },
 ): Record<ShareStyle, string> {
   if (!selected) return { formal: "", detailed: "", friendly: "" };
   const openDebts = selectedDebts.filter(
@@ -47,20 +59,68 @@ export function buildShareMessages(
         return itemLines;
       });
       return [
-        `INV  : ${first.invoice_no || "TANPA NOTA"}`,
+        ...(options.invoiceNumber
+          ? [`INV  : ${first.invoice_no || "TANPA NOTA"}`]
+          : []),
         `TGL  : ${receiptDate(first.date)}`,
         ...lines,
       ].join("\n");
     })
     .join("\n\n");
+  const informativeSections = [...receiptGroups.values()]
+    .map((debts) => {
+      const first = debts[0];
+      const heading = [
+        options.invoiceNumber
+          ? `Nota ${first.invoice_no || "tanpa nomor"}`
+          : null,
+        `tanggal ${receiptDate(first.date)}`,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      const lines = debts.map((debt) => {
+        const unitPrice =
+          debt.price_mode === "wholesale"
+            ? debt.wholesale_price
+            : debt.unit_price;
+        const calculatedPrice =
+          unitPrice ?? Math.round(debt.amount / Math.max(1, debt.qty));
+        const remaining = debt.amount - debt.paid_amount;
+        const paymentNote =
+          debt.paid_amount > 0
+            ? `; sudah dibayar ${rupiah.format(debt.paid_amount)}, sisa ${rupiah.format(remaining)}`
+            : "";
+        return `• ${debt.item || "Piutang"}: ${debt.qty} × ${rupiah.format(calculatedPrice)} = ${rupiah.format(debt.amount)}${paymentNote}`;
+      });
+      return `${heading}\n${lines.join("\n")}`;
+    })
+    .join("\n\n");
+  const shownStoreName = options.storeName ? store.name : "";
+  const shownCustomerName = options.customerName ? selected.name : "";
+  const customerGreeting = shownCustomerName ? ` Kak ${shownCustomerName}` : " Kak";
+  const storeContext = shownStoreName ? ` di ${shownStoreName}` : "";
+  const storeSignature = [
+    shownStoreName,
+    options.storeAddress ? store.address : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
   const receipt = [
     "STRUK TAGIHAN",
     "==================================",
-    store.name.toUpperCase(),
-    ...(store.address ? [store.address.toUpperCase()] : []),
-    "----------------------------------",
-    `NAMA : ${selected.name.toUpperCase()}`,
-    "----------------------------------",
+    ...(shownStoreName ? [shownStoreName.toUpperCase()] : []),
+    ...(options.storeAddress && store.address
+      ? [store.address.toUpperCase()]
+      : []),
+    ...(shownStoreName || (options.storeAddress && store.address)
+      ? ["----------------------------------"]
+      : []),
+    ...(shownCustomerName
+      ? [
+          `NAMA : ${shownCustomerName.toUpperCase()}`,
+          "----------------------------------",
+        ]
+      : []),
     receiptSections || "TIDAK ADA PIUTANG TERBUKA",
     "----------------------------------",
     receiptRow("TOTAL SISA", `Rp ${receiptNumber.format(selected.balance)}`),
@@ -76,8 +136,8 @@ export function buildShareMessages(
     "==================================",
   ].join("\n");
   return {
-    formal: `Yth. Bapak/Ibu ${selected.name},\n\nKami menyampaikan informasi saldo piutang Anda di ${store.name}.\nTotal sisa piutang: ${rupiah.format(selected.balance)}.${creditNote}\n\nMohon pembayaran dapat dilakukan saat memungkinkan. Jika sudah melakukan pembayaran, silakan abaikan pesan ini.\n\nTerima kasih.\n${store.name}${store.address ? `\n${store.address}` : ""}`,
+    formal: `Halo${customerGreeting} 👋\n\nBerikut rincian piutangnya${storeContext}:\n\n${informativeSections || "Tidak ada piutang terbuka."}\n\nTotal sisa piutang: ${rupiah.format(selected.balance)}.${creditNote}\n\nBisa dibayarkan saat sudah memungkinkan, ya. Kalau ada rincian yang ingin ditanyakan, silakan kabari kami. Terima kasih 🙏${storeSignature ? `\n\n${storeSignature}` : ""}`,
     detailed: `\`\`\`\n${receipt}\n\`\`\``,
-    friendly: `Halo Kak ${selected.name} 👋\n\nSemoga kabarnya baik. Kami ingin mengingatkan bahwa masih ada sisa piutang sebesar ${rupiah.format(selected.balance)} di ${store.name}.${creditNote}\n\nBoleh dibayarkan saat sudah memungkinkan, ya. Jika sudah membayar, pesan ini dapat diabaikan. Terima kasih banyak 🙏\n\n${store.name}`,
+    friendly: `Hai${customerGreeting} 👋\n\nMau mengingatkan, masih ada piutang${storeContext} dengan rincian berikut:\n\n${informativeSections || "Tidak ada piutang terbuka."}\n\nTotal sisanya ${rupiah.format(selected.balance)}.${creditNote}\n\nBoleh dibayarkan saat sudah memungkinkan, ya. Kalau sudah membayar atau ada rincian yang perlu dicek, kabari kami saja. Terima kasih banyak 🙏${storeSignature ? `\n\n${storeSignature}` : ""}`,
   };
 }

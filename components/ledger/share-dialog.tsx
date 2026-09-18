@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Copy, MessageCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ import type {
   Customer,
   Debt,
   LedgerData,
+  ShareDisplayOptions,
   ShareStyle,
 } from "@/lib/ledger/types";
 type Props = {
@@ -36,9 +38,15 @@ export function ShareDialog({
   store,
 }: Props) {
   const [shareStyle, setShareStyle] = useState<ShareStyle>("detailed");
+  const [displayOptions, setDisplayOptions] = useState<ShareDisplayOptions>({
+    storeName: true,
+    storeAddress: true,
+    invoiceNumber: true,
+    customerName: true,
+  });
   const shareMessages = useMemo(
-    () => buildShareMessages(selected, selectedDebts, store),
-    [selected, selectedDebts, store],
+    () => buildShareMessages(selected, selectedDebts, store, displayOptions),
+    [displayOptions, selected, selectedDebts, store],
   );
   const shareMessage = shareMessages[shareStyle];
   async function copyDebtDetails() {
@@ -82,8 +90,8 @@ export function ShareDialog({
               [
                 {
                   id: "formal",
-                  title: "Ringkas & formal",
-                  note: "Cocok untuk pemberitahuan umum",
+                  title: "Santai & informatif",
+                  note: "Bahasa santai dengan rincian lengkap",
                 },
                 {
                   id: "detailed",
@@ -109,6 +117,44 @@ export function ShareDialog({
                 </span>
               </button>
             ))}
+          </div>
+          <div className="rounded-xl border border-border p-3 sm:p-4">
+            <div>
+              <p className="text-sm font-semibold">Informasi yang ditampilkan</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pilihan berlaku pada pesan dan struk yang dibagikan.
+              </p>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {(
+                [
+                  ["storeName", "Nama toko"],
+                  ["storeAddress", "Alamat toko"],
+                  ["invoiceNumber", "Nomor nota (INV)"],
+                  ["customerName", "Nama pelanggan"],
+                ] as const
+              ).map(([key, label]) => (
+                <Label
+                  key={key}
+                  htmlFor={`share-${key}`}
+                  className="flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2 font-normal"
+                >
+                  <span className="text-xs font-medium">{label}</span>
+                  <Switch
+                    id={`share-${key}`}
+                    size="sm"
+                    checked={displayOptions[key]}
+                    disabled={key === "storeAddress" && !store.address}
+                    onCheckedChange={(checked) =>
+                      setDisplayOptions((current) => ({
+                        ...current,
+                        [key]: checked,
+                      }))
+                    }
+                  />
+                </Label>
+              ))}
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="sharePreview">Pratinjau pesan</Label>
