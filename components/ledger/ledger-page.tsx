@@ -162,6 +162,7 @@ export function LedgerPage({ initialData }: Props) {
           setEditCustomerOpen={setEditCustomerOpen}
           saving={saving}
           onDeleteCustomer={deleteCustomer}
+          postAction={postAction}
           mobileDetailOpen={mobileDetailOpen}
           onMobileBack={() => {
             setMobileDetailOpen(false);

@@ -1,5 +1,17 @@
 "use client";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -13,15 +25,31 @@ import { TabsContent } from "@/components/ui/tabs";
 import {
   CheckCircle2,
   Clock3,
+  Loader2,
   ReceiptText,
+  Trash2,
   UserRound,
 } from "lucide-react";
-import { formatDate, rupiah } from "@/lib/ledger/format";
-import type { Customer, Debt } from "@/lib/ledger/types";
+import { asNumber, formatDate, rupiah } from "@/lib/ledger/format";
+import type { Customer, Debt, PostAction } from "@/lib/ledger/types";
+import { toast } from "sonner";
 
-type Props = { selected: Customer; selectedDebts: Debt[] };
-export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
+type Props = {
+  selected: Customer;
+  selectedDebts: Debt[];
+  postAction: PostAction;
+};
+export function CustomerLedgerTab({
+  selected,
+  selectedDebts,
+  postAction,
+}: Props) {
   const [filter, setFilter] = useState<"all" | "active">("all");
+  const [selectedDebtIds, setSelectedDebtIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const activeDebts = selectedDebts.filter(
     (debt) => debt.amount > debt.paid_amount,
   );
@@ -33,6 +61,60 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
     0,
   );
   const openCount = activeDebts.length;
+  const allVisibleSelected =
+    visibleDebts.length > 0 &&
+    visibleDebts.every((debt) => selectedDebtIds.has(debt.id));
+  const someVisibleSelected = visibleDebts.some((debt) =>
+    selectedDebtIds.has(debt.id),
+  );
+
+  function changeFilter(nextFilter: "all" | "active") {
+    setFilter(nextFilter);
+    setSelectedDebtIds(new Set());
+  }
+
+  function toggleDebt(debtId: string, checked: boolean) {
+    setSelectedDebtIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(debtId);
+      else next.delete(debtId);
+      return next;
+    });
+  }
+
+  function toggleAllVisible(checked: boolean) {
+    setSelectedDebtIds(
+      checked ? new Set(visibleDebts.map((debt) => debt.id)) : new Set(),
+    );
+  }
+
+  async function deleteSelectedDebts() {
+    if (!selectedDebtIds.size) return;
+    setDeleting(true);
+    try {
+      const result = await postAction({
+        action: "delete_debts",
+        customerId: selected.id,
+        debtIds: [...selectedDebtIds],
+      });
+      const deletedCount = asNumber(result.deletedCount);
+      setSelectedDebtIds(new Set());
+      setDeleteConfirmOpen(false);
+      const restoredCredit = asNumber(result.restoredCredit);
+      toast.success(
+        `${deletedCount} transaksi piutang berhasil dihapus${restoredCredit > 0 ? ` · saldo ${rupiah.format(restoredCredit)} dikembalikan` : ""}.`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Transaksi piutang belum dapat dihapus.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <TabsContent value="ledger" className="m-0 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-5 @xl:px-5">
@@ -51,7 +133,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
             <button
               type="button"
               aria-pressed={filter === "all"}
-              onClick={() => setFilter("all")}
+              onClick={() => changeFilter("all")}
               className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px]! font-semibold! transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filter === "all" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               Semua
@@ -62,7 +144,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
             <button
               type="button"
               aria-pressed={filter === "active"}
-              onClick={() => setFilter("active")}
+              onClick={() => changeFilter("active")}
               className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px]! font-semibold! transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filter === "active" ? "bg-card text-amber-900 shadow-sm dark:text-amber-300" : "text-muted-foreground hover:text-foreground"}`}
             >
               Aktif
@@ -73,9 +155,45 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
           </div>
         </div>
       </div>
+      {visibleDebts.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border/60 bg-muted/30 px-4 py-2.5 @xl:px-5">
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium">
+            <Checkbox
+              aria-label="Pilih semua transaksi yang ditampilkan"
+              checked={
+                allVisibleSelected
+                  ? true
+                  : someVisibleSelected
+                    ? "indeterminate"
+                    : false
+              }
+              onCheckedChange={(checked) =>
+                toggleAllVisible(checked === true)
+              }
+            />
+            Pilih semua
+          </label>
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] text-muted-foreground">
+              {selectedDebtIds.size} transaksi dipilih
+            </span>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="h-8 gap-1.5 text-xs!"
+              disabled={!selectedDebtIds.size || deleting}
+              onClick={() => setDeleteConfirmOpen(true)}
+            >
+              <Trash2 className="size-3.5" aria-hidden="true" />
+              Hapus terpilih
+            </Button>
+          </div>
+        </div>
+      )}
       {visibleDebts.length > 0 ? (
         <>
-          <div className="space-y-3 border-t border-border/60 bg-muted/20 p-3 @4xl:hidden">
+          <div className="space-y-3 bg-muted/20 p-3 @4xl:hidden">
             {visibleDebts.map((debt) => {
               const price =
                 (debt.price_mode === "wholesale"
@@ -87,10 +205,18 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
               return (
                 <article
                   key={debt.id}
-                  className="rounded-xl border border-border/70 bg-card p-3 shadow-xs"
+                  className={`rounded-xl border bg-card p-3 shadow-xs ${selectedDebtIds.has(debt.id) ? "border-primary/60 ring-2 ring-primary/10" : "border-border/70"}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                    <Checkbox
+                      className="mt-0.5"
+                      aria-label={`Pilih transaksi ${debt.item || debt.invoice_no || debt.id}`}
+                      checked={selectedDebtIds.has(debt.id)}
+                      onCheckedChange={(checked) =>
+                        toggleDebt(debt.id, checked === true)
+                      }
+                    />
+                    <div className="min-w-0 flex-1">
                       <p className="truncate font-mono text-[11px] font-medium text-primary">
                         {debt.invoice_no || "Tanpa nota"}
                       </p>
@@ -156,11 +282,26 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                 Rincian piutang {selected.name}: nota, barang, nilai,
                 pembayaran, dan sisa tagihan.
               </caption>
-              <TableHeader className="border-y border-border/70 bg-muted/50">
+              <TableHeader className="border-b border-border/70 bg-muted/50">
                 <TableRow className="hover:bg-transparent">
+                  <TableHead scope="col" className="w-12 pl-5">
+                    <Checkbox
+                      aria-label="Pilih semua transaksi yang ditampilkan"
+                      checked={
+                        allVisibleSelected
+                          ? true
+                          : someVisibleSelected
+                            ? "indeterminate"
+                            : false
+                      }
+                      onCheckedChange={(checked) =>
+                        toggleAllVisible(checked === true)
+                      }
+                    />
+                  </TableHead>
                   <TableHead
                     scope="col"
-                    className="pl-5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                    className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
                   >
                     Nota / tanggal
                   </TableHead>
@@ -217,9 +358,21 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                   return (
                     <TableRow
                       key={debt.id}
-                      className="border-border/60 hover:bg-secondary/20"
+                      data-state={
+                        selectedDebtIds.has(debt.id) ? "selected" : undefined
+                      }
+                      className="border-border/60 hover:bg-secondary/20 data-[state=selected]:bg-secondary/40"
                     >
                       <TableCell className="py-4 pl-5 align-top">
+                        <Checkbox
+                          aria-label={`Pilih transaksi ${debt.item || debt.invoice_no || debt.id}`}
+                          checked={selectedDebtIds.has(debt.id)}
+                          onCheckedChange={(checked) =>
+                            toggleDebt(debt.id, checked === true)
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="py-4 align-top">
                         <p className="font-mono text-[11px] font-medium text-primary">
                           {debt.invoice_no || "Tanpa nota"}
                         </p>
@@ -301,7 +454,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
               </TableBody>
               <TableFooter className="bg-muted/30">
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={2} className="py-4 pl-5 text-xs">
+                  <TableCell colSpan={3} className="py-4 pl-5 text-xs">
                     Total {visibleDebts.length} catatan
                   </TableCell>
                   <TableCell className="text-right text-xs font-bold tabular-nums">
@@ -342,6 +495,37 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
           </div>
         </div>
       )}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Hapus {selectedDebtIds.size} transaksi piutang?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Transaksi terpilih beserta riwayat pembayaran yang terkait akan
+              dihapus permanen. Total piutang dan nota akan dihitung ulang
+              setelah penghapusan. Saldo kelebihan bayar yang pernah digunakan
+              akan dikembalikan ke pelanggan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void deleteSelectedDebts();
+              }}
+            >
+              {deleting && (
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
+              )}
+              {deleting ? "Menghapus..." : "Ya, hapus transaksi"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TabsContent>
   );
 }

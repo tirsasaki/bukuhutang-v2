@@ -61,6 +61,124 @@ export async function POST(request: Request) {
       return Response.json({ ok: true, id: customerId });
     }
 
+    if (action === "delete_debts") {
+      const customerId = String(body.customerId ?? "");
+      const debtIds = [
+        ...new Set(
+          (Array.isArray(body.debtIds) ? body.debtIds : [])
+            .map((value) => String(value))
+            .filter(Boolean),
+        ),
+      ];
+      if (!customerId || !debtIds.length)
+        return jsonError("Pilih transaksi piutang yang akan dihapus.");
+      if (debtIds.length > 500)
+        return jsonError("Maksimal 500 transaksi dapat dihapus sekaligus.");
+
+      const { data: targetDebts, error: targetError } = await supabase
+        .from("debt_items")
+        .select("id,invoice_id")
+        .eq("owner_id", user.id)
+        .eq("customer_id", customerId)
+        .in("id", debtIds);
+      if (targetError) throw targetError;
+      if (!targetDebts?.length)
+        return jsonError("Transaksi piutang tidak ditemukan.", 404);
+      if (targetDebts.length !== debtIds.length)
+        return jsonError(
+          "Sebagian transaksi tidak ditemukan. Muat ulang halaman lalu coba lagi.",
+          409,
+        );
+
+      const { data: creditPayments, error: creditPaymentError } = await supabase
+        .from("payments")
+        .select("amount")
+        .eq("owner_id", user.id)
+        .eq("source", "credit")
+        .in("debt_item_id", debtIds);
+      if (creditPaymentError) throw creditPaymentError;
+      const restoredCredit = (creditPayments ?? []).reduce(
+        (total, payment) => total + Number(payment.amount),
+        0,
+      );
+
+      const { data: deletedDebts, error: deleteError } = await supabase
+        .from("debt_items")
+        .delete()
+        .eq("owner_id", user.id)
+        .eq("customer_id", customerId)
+        .in("id", debtIds)
+        .select("id");
+      if (deleteError) throw deleteError;
+
+      if (restoredCredit > 0) {
+        const { error: restoreCreditError } = await supabase
+          .from("credit_transactions")
+          .insert({
+            id: crypto.randomUUID(),
+            owner_id: user.id,
+            customer_id: customerId,
+            amount: restoredCredit,
+            note: "Pengembalian saldo dari penghapusan piutang",
+            created_at: new Date().toISOString(),
+          });
+        if (restoreCreditError) throw restoreCreditError;
+      }
+
+      const invoiceIds = [
+        ...new Set(
+          targetDebts
+            .map((debt) => debt.invoice_id)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      if (invoiceIds.length) {
+        const { data: remainingDebts, error: remainingError } = await supabase
+          .from("debt_items")
+          .select("invoice_id,amount")
+          .eq("owner_id", user.id)
+          .eq("customer_id", customerId)
+          .in("invoice_id", invoiceIds);
+        if (remainingError) throw remainingError;
+
+        const totals = new Map<string, number>();
+        for (const debt of remainingDebts ?? []) {
+          if (!debt.invoice_id) continue;
+          totals.set(
+            debt.invoice_id,
+            (totals.get(debt.invoice_id) ?? 0) + Number(debt.amount),
+          );
+        }
+        const invoiceResults = await Promise.all(
+          invoiceIds.map((invoiceId) => {
+            const total = totals.get(invoiceId) ?? 0;
+            return total > 0
+              ? supabase
+                  .from("invoices")
+                  .update({ total_amount: total })
+                  .eq("id", invoiceId)
+                  .eq("owner_id", user.id)
+                  .eq("customer_id", customerId)
+              : supabase
+                  .from("invoices")
+                  .delete()
+                  .eq("id", invoiceId)
+                  .eq("owner_id", user.id)
+                  .eq("customer_id", customerId);
+          }),
+        );
+        const invoiceError = invoiceResults.find((result) => result.error)
+          ?.error;
+        if (invoiceError) throw invoiceError;
+      }
+
+      return Response.json({
+        ok: true,
+        deletedCount: deletedDebts?.length ?? 0,
+        restoredCredit,
+      });
+    }
+
     if (action === "create_debt") {
       const customerId = String(body.customerId ?? "");
       const date = String(body.date ?? "");

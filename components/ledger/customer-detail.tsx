@@ -19,7 +19,7 @@ import { CustomerPaymentsTab } from "./customer-payments-tab";
 import { CustomerProfileTab } from "./customer-profile-tab";
 import { CustomerSummary } from "./customer-summary";
 import { formatDate } from "@/lib/ledger/format";
-import type { Customer, Debt, Payment } from "@/lib/ledger/types";
+import type { Customer, Debt, Payment, PostAction } from "@/lib/ledger/types";
 import Link from "next/link";
 
 type Props = {
@@ -32,6 +32,7 @@ type Props = {
   setEditCustomerOpen: (open: boolean) => void;
   saving: boolean;
   onDeleteCustomer: () => Promise<void>;
+  postAction: PostAction;
   mobileDetailOpen: boolean;
   onMobileBack: () => void;
 };
@@ -45,6 +46,7 @@ export function CustomerDetail({
   setEditCustomerOpen,
   saving,
   onDeleteCustomer,
+  postAction,
   mobileDetailOpen,
   onMobileBack,
 }: Props) {
@@ -195,6 +197,7 @@ export function CustomerDetail({
               key={selected.id}
               selected={selected}
               selectedDebts={selectedDebts}
+              postAction={postAction}
             />
             <CustomerPaymentsTab
               key={selected.id}
