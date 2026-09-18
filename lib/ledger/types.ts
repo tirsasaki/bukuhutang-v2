@@ -61,6 +61,7 @@ export type DebtDraft = {
   qty: string;
   unitPrice: string;
   wholesalePrice: string;
+  discount: string;
   priceMode: "retail" | "wholesale";
 };
 export type ShareStyle = "formal" | "detailed" | "friendly";

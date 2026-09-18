@@ -49,18 +49,31 @@ export function DebtDialog({
     newDebtDraft(),
   ]);
   const [successInfo, setSuccessInfo] = useState<DebtSuccess | null>(null);
-  const invoiceTotal = useMemo(
+  const invoiceSummary = useMemo(
     () =>
-      invoiceItems.reduce((total, row) => {
-        const qty = Math.max(0, Math.round(asNumber(row.qty)));
-        const price =
-          row.priceMode === "wholesale"
-            ? asNumber(row.wholesalePrice)
-            : asNumber(row.unitPrice);
-        return total + qty * Math.max(0, price);
-      }, 0),
+      invoiceItems.reduce(
+        (summary, row) => {
+          const qty = Math.max(0, Math.round(asNumber(row.qty)));
+          const price =
+            row.priceMode === "wholesale"
+              ? asNumber(row.wholesalePrice)
+              : asNumber(row.unitPrice);
+          const grossAmount = qty * Math.max(0, price);
+          const discount = Math.min(
+            grossAmount,
+            Math.max(0, Math.round(asNumber(row.discount))),
+          );
+          return {
+            gross: summary.gross + grossAmount,
+            discount: summary.discount + discount,
+            total: summary.total + Math.max(0, grossAmount - discount),
+          };
+        },
+        { gross: 0, discount: 0, total: 0 },
+      ),
     [invoiceItems],
   );
+  const invoiceTotal = invoiceSummary.total;
 
   function updateInvoiceItem(id: string, values: Partial<DebtDraft>) {
     setInvoiceItems((current) =>
@@ -80,11 +93,12 @@ export function DebtDialog({
         date: values.date,
         cashier: values.cashier,
         items: invoiceItems.map(
-          ({ item, qty, unitPrice, wholesalePrice, priceMode }) => ({
+          ({ item, qty, unitPrice, wholesalePrice, discount, priceMode }) => ({
             item,
             qty,
             unitPrice,
             wholesalePrice,
+            discount,
             priceMode,
           }),
         ),
@@ -116,7 +130,8 @@ export function DebtDialog({
             <DialogTitle>Catat piutang {selected?.name}</DialogTitle>
             <DialogDescription>
               Tambahkan seluruh barang dalam satu nota. Nomor nota akan dibuat
-              otomatis saat disimpan.
+              otomatis saat disimpan. Isi diskon nominal untuk harga paket,
+              misalnya diskon Rp1.000 agar 3 × Rp7.000 menjadi Rp20.000.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5 py-5">
@@ -154,12 +169,13 @@ export function DebtDialog({
               </div>
             </div>
             <div className="space-y-3">
-              <div className="hidden grid-cols-[minmax(190px,2fr)_90px_minmax(130px,1fr)_130px_minmax(130px,1fr)_120px_40px] gap-2 px-1 text-xs font-medium text-muted-foreground lg:grid">
+              <div className="hidden grid-cols-[minmax(160px,2fr)_72px_minmax(110px,1fr)_105px_minmax(110px,1fr)_minmax(105px,1fr)_110px_40px] gap-2 px-1 text-xs font-medium text-muted-foreground lg:grid">
                 <span>Barang / keterangan</span>
                 <span>Jumlah</span>
                 <span>Harga eceran</span>
                 <span>Jenis harga</span>
                 <span>Harga grosir</span>
+                <span>Diskon</span>
                 <span className="text-right">Jumlah harga</span>
                 <span />
               </div>
@@ -169,11 +185,16 @@ export function DebtDialog({
                   row.priceMode === "wholesale"
                     ? asNumber(row.wholesalePrice)
                     : asNumber(row.unitPrice);
-                const subtotal = qty * Math.max(0, appliedPrice);
+                const grossAmount = qty * Math.max(0, appliedPrice);
+                const discount = Math.max(
+                  0,
+                  Math.round(asNumber(row.discount)),
+                );
+                const subtotal = Math.max(0, grossAmount - discount);
                 return (
                   <div
                     key={row.id}
-                    className="grid gap-3 rounded-xl border border-border bg-muted/30 p-3 lg:grid-cols-[minmax(190px,2fr)_90px_minmax(130px,1fr)_130px_minmax(130px,1fr)_120px_40px] lg:items-end lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0"
+                    className="grid gap-3 rounded-xl border border-border bg-muted/30 p-3 lg:grid-cols-[minmax(160px,2fr)_72px_minmax(110px,1fr)_105px_minmax(110px,1fr)_minmax(105px,1fr)_110px_40px] lg:items-end lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0"
                   >
                     <div className="space-y-1.5">
                       <Label className="lg:sr-only" htmlFor={`item-${row.id}`}>
@@ -277,13 +298,41 @@ export function DebtDialog({
                         disabled={row.priceMode !== "wholesale"}
                       />
                     </div>
-                    <div className="flex h-9 items-center justify-between lg:justify-end">
+                    <div className="space-y-1.5">
+                      <Label
+                        className="lg:sr-only"
+                        htmlFor={`discount-${row.id}`}
+                      >
+                        Diskon (Rp)
+                      </Label>
+                      <Input
+                        id={`discount-${row.id}`}
+                        value={row.discount}
+                        onChange={(event) =>
+                          updateInvoiceItem(row.id, {
+                            discount: event.target.value,
+                          })
+                        }
+                        type="number"
+                        min="0"
+                        max={grossAmount > 0 ? grossAmount - 1 : undefined}
+                        step="1"
+                        inputMode="numeric"
+                        placeholder="Rp 0"
+                      />
+                    </div>
+                    <div className="flex min-h-9 items-center justify-between gap-2 lg:flex-col lg:items-end lg:justify-center lg:gap-0">
                       <span className="text-xs text-muted-foreground lg:hidden">
                         Jumlah harga
                       </span>
-                      <span className="font-semibold">
+                      <span className="font-semibold tabular-nums">
                         {rupiah.format(subtotal)}
                       </span>
+                      {discount > 0 && (
+                        <span className="text-[10px] text-amber-900 tabular-nums dark:text-amber-300">
+                          Diskon {rupiah.format(discount)}
+                        </span>
+                      )}
                     </div>
                     <Button
                       type="button"
@@ -320,6 +369,9 @@ export function DebtDialog({
                 <p className="text-sm text-secondary-foreground">Total nota</p>
                 <p className="text-xs text-muted-foreground">
                   {invoiceItems.length} jenis barang
+                  {invoiceSummary.discount > 0
+                    ? ` · Diskon ${rupiah.format(invoiceSummary.discount)}`
+                    : ""}
                 </p>
               </div>
               <p className="text-2xl font-extrabold tracking-tight">

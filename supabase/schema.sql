@@ -411,6 +411,7 @@ declare
   item_qty integer;
   retail_price bigint;
   gross_price bigint;
+  item_discount bigint;
   selected_price bigint;
   selected_mode text;
   invoice_sequence integer;
@@ -439,12 +440,13 @@ begin
     item_qty := coalesce((item_record->>'qty')::integer, 0);
     retail_price := coalesce((item_record->>'unitPrice')::bigint, 0);
     gross_price := coalesce((item_record->>'wholesalePrice')::bigint, 0);
+    item_discount := coalesce((item_record->>'discount')::bigint, 0);
     selected_mode := case when item_record->>'priceMode' = 'wholesale' then 'wholesale' else 'retail' end;
     selected_price := case when selected_mode = 'wholesale' then gross_price else retail_price end;
-    if item_name = '' or item_qty <= 0 or retail_price <= 0 or selected_price <= 0 then
-      raise exception 'Lengkapi nama barang, jumlah, dan harga setiap barang';
+    if item_name = '' or item_qty <= 0 or retail_price <= 0 or selected_price <= 0 or item_discount < 0 or item_discount >= item_qty::bigint * selected_price then
+      raise exception 'Lengkapi nama barang, jumlah, harga, dan diskon setiap barang';
     end if;
-    invoice_total := invoice_total + (item_qty::bigint * selected_price);
+    invoice_total := invoice_total + (item_qty::bigint * selected_price) - item_discount;
   end loop;
 
   insert into public.invoice_counters (owner_id, invoice_date, last_number)
@@ -464,13 +466,14 @@ begin
     item_qty := (item_record->>'qty')::integer;
     retail_price := (item_record->>'unitPrice')::bigint;
     gross_price := coalesce((item_record->>'wholesalePrice')::bigint, 0);
+    item_discount := coalesce((item_record->>'discount')::bigint, 0);
     selected_mode := case when item_record->>'priceMode' = 'wholesale' then 'wholesale' else 'retail' end;
     selected_price := case when selected_mode = 'wholesale' then gross_price else retail_price end;
     insert into public.debt_items (
       id, owner_id, customer_id, amount, created_at, date, invoice_no, item, cashier, qty,
       unit_price, wholesale_price, price_mode, invoice_id
     ) values (
-      gen_random_uuid()::text, auth.uid(), invoice_customer_id, item_qty::bigint * selected_price, now(), invoice_date,
+      gen_random_uuid()::text, auth.uid(), invoice_customer_id, (item_qty::bigint * selected_price) - item_discount, now(), invoice_date,
       generated_invoice_no, item_name, coalesce(invoice_cashier, ''), item_qty, retail_price,
       nullif(gross_price, 0), selected_mode, generated_invoice_id
     );

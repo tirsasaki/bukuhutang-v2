@@ -55,5 +55,8 @@ Jika basis data sudah pernah dibuat, jalankan berkas baru di dalam folder `supab
 4. `supabase/migrations/20260917_add_payment_options.sql`
 5. `supabase/migrations/20260917_add_overpayment_credit.sql`
 6. `supabase/migrations/20260917_add_store_settings.sql`
+7. `supabase/migrations/20260918_add_item_discounts.sql`
 
 Migrasi kedua menambahkan nota otomatis, beberapa barang dalam satu nota, serta harga eceran dan grosir. Migrasi ketiga memperbaiki fungsi penghitung nomor nota. Migrasi keempat menambahkan pembayaran sebagian dan pelunasan seluruh piutang pelanggan. Migrasi kelima mencatat kelebihan pembayaran sebagai saldo pelanggan. Migrasi keenam menyimpan nama dan alamat toko. Jalankan migrasi secara berurutan sebelum memakai fitur terkait.
+
+Migrasi ketujuh memperbarui fungsi pembuatan nota agar mendukung diskon nominal per barang. Migrasi ini tidak menambah kolom baru; nilai diskon diturunkan dari harga awal dan nilai akhir sehingga cadangan lama tetap kompatibel.
