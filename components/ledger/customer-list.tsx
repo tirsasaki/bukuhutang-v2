@@ -14,6 +14,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 
 import { formatDate, rupiah } from "@/lib/ledger/format";
 import type { LedgerData } from "@/lib/ledger/types";
@@ -23,7 +24,6 @@ type Props = {
   selectedId: string;
   setSelectedId: (id: string) => void;
   setCustomerOpen: (open: boolean) => void;
-  setImportOpen: (open: boolean) => void;
 };
 export function CustomerList({
   data,
@@ -31,7 +31,6 @@ export function CustomerList({
   selectedId,
   setSelectedId,
   setCustomerOpen,
-  setImportOpen,
 }: Props) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -236,7 +235,7 @@ export function CustomerList({
             <p className="mt-1 text-sm text-muted-foreground">
               {data.customers.length
                 ? "Coba ubah pencarian atau pilihan status."
-                : "Impor cadangan lama atau tambahkan pelanggan baru."}
+                : "Tambahkan pelanggan baru atau pulihkan cadangan melalui pengaturan."}
             </p>
             <div className="mt-4 flex justify-center gap-2">
               {data.customers.length ? (
@@ -252,12 +251,8 @@ export function CustomerList({
                 </Button>
               ) : (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setImportOpen(true)}
-                  >
-                    Impor
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/pengaturan">Kelola cadangan</Link>
                   </Button>
                   <Button size="sm" onClick={() => setCustomerOpen(true)}>
                     Tambah

@@ -19,12 +19,12 @@ import { CustomerProfileTab } from "./customer-profile-tab";
 import { CustomerSummary } from "./customer-summary";
 import { formatDate } from "@/lib/ledger/format";
 import type { Customer, Debt, Payment } from "@/lib/ledger/types";
+import Link from "next/link";
 
 type Props = {
   selected: Customer | null;
   selectedDebts: Debt[];
   selectedPayments: Payment[];
-  setImportOpen: (open: boolean) => void;
   setShareOpen: (open: boolean) => void;
   setDebtOpen: (open: boolean) => void;
   setPaymentOpen: (open: boolean) => void;
@@ -34,7 +34,6 @@ export function CustomerDetail({
   selected,
   selectedDebts,
   selectedPayments,
-  setImportOpen,
   setShareOpen,
   setDebtOpen,
   setPaymentOpen,
@@ -48,15 +47,13 @@ export function CustomerDetail({
             <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-secondary text-primary">
               <UploadCloud className="size-8" aria-hidden="true" />
             </div>
-            <h2 className="mt-4 text-xl font-bold">
-              Pulihkan buku piutang lama
-            </h2>
+            <h2 className="mt-4 text-xl font-bold">Belum ada pelanggan</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Berkas dari repositori cadangan Anda sudah didukung. Pilih kedua
-              berkas JSON; data yang sama akan dilewati otomatis.
+              Tambahkan pelanggan dari daftar di sebelah kiri atau pulihkan
+              cadangan melalui Pengaturan Toko.
             </p>
-            <Button className="mt-5" onClick={() => setImportOpen(true)}>
-              Pilih cadangan JSON
+            <Button asChild variant="outline" className="mt-5">
+              <Link href="/pengaturan">Buka pengaturan cadangan</Link>
             </Button>
           </div>
         </div>

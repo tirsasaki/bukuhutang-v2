@@ -9,16 +9,13 @@ import { CustomerDetail } from "./customer-detail";
 import { CustomerDialogs } from "./customer-dialogs";
 import { CustomerList } from "./customer-list";
 import { DebtDialog } from "./debt-dialog";
-import { ImportDialog } from "./import-dialog";
 import { LedgerHeader } from "./ledger-header";
 import { LedgerSummary } from "./ledger-summary";
 import { PaymentDialog } from "./payment-dialog";
 import { ShareDialog } from "./share-dialog";
 export function LedgerPage() {
-  const { data, selectedId, setSelectedId, loading, loadData, postAction } =
-    useLedger();
+  const { data, selectedId, setSelectedId, loading, postAction } = useLedger();
   const [saving, setSaving] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [editCustomerOpen, setEditCustomerOpen] = useState(false);
   const [debtOpen, setDebtOpen] = useState(false);
@@ -107,7 +104,6 @@ export function LedgerPage() {
       <LedgerHeader
         storeName={data.store.name}
         hasSelected={!!selected}
-        setImportOpen={setImportOpen}
         setDebtOpen={setDebtOpen}
       />
       <LedgerSummary
@@ -123,26 +119,17 @@ export function LedgerPage() {
           selectedId={selectedId}
           setSelectedId={setSelectedId}
           setCustomerOpen={setCustomerOpen}
-          setImportOpen={setImportOpen}
         />
         <CustomerDetail
           selected={selected}
           selectedDebts={selectedDebts}
           selectedPayments={selectedPayments}
-          setImportOpen={setImportOpen}
           setShareOpen={setShareOpen}
           setDebtOpen={setDebtOpen}
           setPaymentOpen={setPaymentOpen}
           setEditCustomerOpen={setEditCustomerOpen}
         />
       </div>
-      <ImportDialog
-        importOpen={importOpen}
-        setImportOpen={setImportOpen}
-        saving={saving}
-        setSaving={setSaving}
-        loadData={loadData}
-      />
       <CustomerDialogs
         customerOpen={customerOpen}
         setCustomerOpen={setCustomerOpen}

@@ -1,28 +1,16 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import {
-  ArrowDownToLine,
-  BookOpenText,
-  LogOut,
-  Plus,
-  Settings2,
-} from "lucide-react";
+import { BookOpenText, LogOut, Plus, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type Props = {
   storeName: string;
   hasSelected: boolean;
-  setImportOpen: (open: boolean) => void;
   setDebtOpen: (open: boolean) => void;
 };
-export function LedgerHeader({
-  storeName,
-  hasSelected,
-  setImportOpen,
-  setDebtOpen,
-}: Props) {
+export function LedgerHeader({ storeName, hasSelected, setDebtOpen }: Props) {
   const router = useRouter();
   async function signOut() {
     const supabase = createSupabaseBrowserClient();
@@ -52,19 +40,10 @@ export function LedgerHeader({
           </p>
         </div>
       </div>
-      <div className="col-span-2 row-start-2 grid grid-cols-2 gap-2 sm:ml-auto sm:flex">
+      <div className="col-span-2 row-start-2 sm:ml-auto sm:flex">
         <Button
           type="button"
-          variant="outline"
-          className="h-9 gap-1.5 rounded-lg border-border/80 bg-card px-3 text-xs! font-medium! text-muted-foreground shadow-none hover:text-primary"
-          onClick={() => setImportOpen(true)}
-        >
-          <ArrowDownToLine className="size-3.5" aria-hidden="true" />
-          Impor cadangan
-        </Button>
-        <Button
-          type="button"
-          className="h-9 gap-1.5 rounded-lg px-3 text-xs! font-semibold! shadow-sm"
+          className="h-9 w-full gap-1.5 rounded-lg px-3 text-xs! font-semibold! shadow-sm sm:w-auto"
           disabled={!hasSelected}
           onClick={() => setDebtOpen(true)}
         >
