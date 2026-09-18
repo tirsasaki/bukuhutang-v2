@@ -11,7 +11,6 @@ import { CustomerDialogs } from "./customer-dialogs";
 import { CustomerList } from "./customer-list";
 import { DebtDialog } from "./debt-dialog";
 import { LedgerHeader } from "./ledger-header";
-import { LedgerSummary } from "./ledger-summary";
 import { PaymentDialog } from "./payment-dialog";
 import { ShareDialog } from "./share-dialog";
 import { TrendPanel } from "./trend-panel";
@@ -53,12 +52,12 @@ export function LedgerPage({ initialData }: Props) {
     (total, customer) => total + Math.max(0, customer.balance),
     0,
   );
-  const paidThisMonth = data.payments
-    .filter(
-      (payment) =>
-        payment.source !== "credit" &&
-        payment.paid_at.slice(0, 7) === new Date().toISOString().slice(0, 7),
-    )
+  const cashPaymentsThisMonth = data.payments.filter(
+    (payment) =>
+      payment.source !== "credit" &&
+      payment.paid_at.slice(0, 7) === new Date().toISOString().slice(0, 7),
+  );
+  const paidThisMonth = cashPaymentsThisMonth
     .reduce((total, payment) => total + payment.amount, 0);
   const needsFollowUp = data.customers.filter(
     (customer) => customer.balance > 0,
@@ -137,14 +136,11 @@ export function LedgerPage({ initialData }: Props) {
       <LedgerHeader
         storeName={data.store.name}
         hasSelected={!!selected}
-        setDebtOpen={setDebtOpen}
-      />
-      <LedgerSummary
-        data={data}
         openBalance={openBalance}
         needsFollowUp={needsFollowUp}
         paidThisMonth={paidThisMonth}
-        mobileDetailOpen={mobileDetailOpen}
+        paymentCountThisMonth={cashPaymentsThisMonth.length}
+        setDebtOpen={setDebtOpen}
       />
       <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)_minmax(280px,340px)]">
         <CustomerList
