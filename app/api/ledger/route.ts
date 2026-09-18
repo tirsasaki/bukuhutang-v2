@@ -190,6 +190,7 @@ export async function POST(request: Request) {
             qty: body.qty ?? 1,
             unitPrice: Number(body.unitPrice ?? body.amount) / Math.max(1, Number(body.qty) || 1),
             wholesalePrice: body.wholesalePrice,
+            discount: body.discount,
             priceMode: body.priceMode,
           }];
 
@@ -202,16 +203,20 @@ export async function POST(request: Request) {
         const qty = Math.round(Number(value.qty));
         const unitPrice = Math.round(Number(value.unitPrice));
         const wholesalePrice = value.wholesalePrice === "" || value.wholesalePrice == null ? null : Math.round(Number(value.wholesalePrice));
+        const discount = value.discount === "" || value.discount == null ? 0 : Math.round(Number(value.discount));
         const priceMode = value.priceMode === "wholesale" ? "wholesale" : "retail";
-        return { item, qty, unitPrice, wholesalePrice, priceMode };
+        return { item, qty, unitPrice, wholesalePrice, discount, priceMode };
       });
 
-      const invalidItem = items.find((item) =>
-        !item.item || item.item.length > 200 || !Number.isSafeInteger(item.qty) || item.qty <= 0 || item.qty > 1_000_000 ||
-        !Number.isSafeInteger(item.unitPrice) || item.unitPrice <= 0 ||
-        (item.priceMode === "wholesale" && (!Number.isSafeInteger(item.wholesalePrice) || Number(item.wholesalePrice) <= 0)),
-      );
-      if (invalidItem) return jsonError("Periksa nama barang, jumlah, serta harga eceran atau grosir pada setiap baris.");
+      const invalidItem = items.find((item) => {
+        const selectedPrice = item.priceMode === "wholesale" ? Number(item.wholesalePrice) : item.unitPrice;
+        const grossAmount = item.qty * selectedPrice;
+        return !item.item || item.item.length > 200 || !Number.isSafeInteger(item.qty) || item.qty <= 0 || item.qty > 1_000_000 ||
+          !Number.isSafeInteger(item.unitPrice) || item.unitPrice <= 0 ||
+          (item.priceMode === "wholesale" && (!Number.isSafeInteger(item.wholesalePrice) || Number(item.wholesalePrice) <= 0)) ||
+          !Number.isSafeInteger(item.discount) || item.discount < 0 || !Number.isSafeInteger(grossAmount) || item.discount >= grossAmount;
+      });
+      if (invalidItem) return jsonError("Periksa nama barang, jumlah, harga, dan diskon pada setiap baris. Diskon harus lebih kecil dari jumlah harga.");
       if (!cashier) return jsonError("Pilih kasir yang mencatat nota ini.");
       const { data: activeCashier, error: cashierError } = await supabase.from("cashiers").select("id").eq("owner_id", user.id).eq("name", cashier).eq("is_active", true).maybeSingle();
       if (cashierError) throw cashierError;

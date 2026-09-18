@@ -20,7 +20,7 @@ import {
   WalletCards,
 } from "lucide-react";
 
-import { formatDate, rupiah } from "@/lib/ledger/format";
+import { debtPricing, formatDate, rupiah } from "@/lib/ledger/format";
 import type { Debt, Payment } from "@/lib/ledger/types";
 type Props = {
   selectedPayments: Payment[];
@@ -138,12 +138,9 @@ export function CustomerPaymentsTab({
           <div className="space-y-3 bg-muted/20 p-3 @4xl:hidden">
             {visiblePayments.map((payment) => {
               const debt = debtById.get(payment.debt_item_id);
-              const price = debt
-                ? ((debt.price_mode === "wholesale"
-                    ? debt.wholesale_price
-                    : debt.unit_price) ??
-                  debt.amount / Math.max(1, debt.qty))
-                : 0;
+              const pricing = debt ? debtPricing(debt) : null;
+              const price = pricing?.unitPrice ?? 0;
+              const discount = pricing?.discount ?? 0;
               return (
                 <article
                   key={payment.id}
@@ -170,6 +167,9 @@ export function CustomerPaymentsTab({
                         {debt
                           ? `${debt.qty} × ${rupiah.format(price)}`
                           : "Rincian lama"}
+                        {discount > 0
+                          ? ` · diskon ${rupiah.format(discount)} · subtotal ${rupiah.format(debt?.amount ?? 0)}`
+                          : ""}
                         {debt?.invoice_no ? ` · ${debt.invoice_no}` : ""}
                       </p>
                     </div>
@@ -219,12 +219,9 @@ export function CustomerPaymentsTab({
           <TableBody>
             {visiblePayments.map((payment) => {
               const debt = debtById.get(payment.debt_item_id);
-              const price = debt
-                ? ((debt.price_mode === "wholesale"
-                    ? debt.wholesale_price
-                    : debt.unit_price) ??
-                  debt.amount / Math.max(1, debt.qty))
-                : 0;
+              const pricing = debt ? debtPricing(debt) : null;
+              const price = pricing?.unitPrice ?? 0;
+              const discount = pricing?.discount ?? 0;
               return (
                 <TableRow
                   key={payment.id}
@@ -250,6 +247,9 @@ export function CustomerPaymentsTab({
                           {debt
                             ? `${debt.qty} × ${rupiah.format(price)}`
                             : "Rincian lama"}
+                          {discount > 0
+                            ? ` · diskon ${rupiah.format(discount)} · subtotal ${rupiah.format(debt?.amount ?? 0)}`
+                            : ""}
                         </span>
                         {debt?.invoice_no && (
                           <span className="inline-flex items-center gap-1 font-mono">

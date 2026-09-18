@@ -1,4 +1,4 @@
-import type { DebtDraft } from "./types";
+import type { Debt, DebtDraft } from "./types";
 export const rupiah = new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
@@ -30,7 +30,32 @@ export function newDebtDraft(): DebtDraft {
     qty: "1",
     unitPrice: "",
     wholesalePrice: "",
+    discount: "",
     priceMode: "retail",
+  };
+}
+export function debtPricing(
+  debt: Pick<
+    Debt,
+    "amount" | "qty" | "unit_price" | "wholesale_price" | "price_mode"
+  >,
+) {
+  const savedPrice =
+    debt.price_mode === "wholesale"
+      ? debt.wholesale_price
+      : debt.unit_price;
+  if (savedPrice == null) {
+    return {
+      unitPrice: debt.amount / Math.max(1, debt.qty),
+      grossAmount: debt.amount,
+      discount: 0,
+    };
+  }
+  const grossAmount = Math.max(0, debt.qty * savedPrice);
+  return {
+    unitPrice: savedPrice,
+    grossAmount,
+    discount: Math.max(0, grossAmount - debt.amount),
   };
 }
 export function receiptDate(value: string) {

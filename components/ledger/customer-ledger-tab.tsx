@@ -30,7 +30,12 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
-import { asNumber, formatDate, rupiah } from "@/lib/ledger/format";
+import {
+  asNumber,
+  debtPricing,
+  formatDate,
+  rupiah,
+} from "@/lib/ledger/format";
 import type { Customer, Debt, PostAction } from "@/lib/ledger/types";
 import { toast } from "sonner";
 
@@ -200,10 +205,7 @@ export function CustomerLedgerTab({
         <>
           <div className="space-y-3 bg-muted/20 p-3 @4xl:hidden">
             {visibleDebts.map((debt) => {
-              const price =
-                (debt.price_mode === "wholesale"
-                  ? debt.wholesale_price
-                  : debt.unit_price) ?? debt.amount / Math.max(1, debt.qty);
+              const { unitPrice: price, discount } = debtPricing(debt);
               const remaining = Math.max(0, debt.amount - debt.paid_amount);
               const settled = remaining <= 0;
               const partial = !settled && debt.paid_amount > 0;
@@ -241,6 +243,11 @@ export function CustomerLedgerTab({
                   <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
                     {debt.qty} × {rupiah.format(price)} · {debt.price_mode === "wholesale" ? "Grosir" : "Eceran"}
                   </p>
+                  {discount > 0 && (
+                    <p className="mt-1 text-[11px] font-medium text-amber-900 tabular-nums dark:text-amber-300">
+                      Diskon {rupiah.format(discount)} · Subtotal {rupiah.format(debt.amount)}
+                    </p>
+                  )}
                   <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
                     <div>
                       <p className="text-[10px] text-muted-foreground">Nilai piutang</p>
@@ -353,10 +360,7 @@ export function CustomerLedgerTab({
               </TableHeader>
               <TableBody>
                 {visibleDebts.map((debt) => {
-                  const price =
-                    (debt.price_mode === "wholesale"
-                      ? debt.wholesale_price
-                      : debt.unit_price) ?? debt.amount / Math.max(1, debt.qty);
+                  const { unitPrice: price, discount } = debtPricing(debt);
                   const remaining = Math.max(0, debt.amount - debt.paid_amount);
                   const settled = remaining <= 0;
                   const partial = !settled && debt.paid_amount > 0;
@@ -410,6 +414,11 @@ export function CustomerLedgerTab({
                               : "Eceran"}
                           </span>
                         </div>
+                        {discount > 0 && (
+                          <p className="mt-1.5 text-[11px] font-medium text-amber-900 tabular-nums dark:text-amber-300">
+                            Diskon {rupiah.format(discount)} · Subtotal {rupiah.format(debt.amount)}
+                          </p>
+                        )}
                         <p className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
                           <UserRound
                             className="size-3 shrink-0"

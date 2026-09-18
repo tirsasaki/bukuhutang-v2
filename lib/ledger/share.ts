@@ -1,4 +1,10 @@
-import { receiptDate, receiptNumber, receiptRow, rupiah } from "./format";
+import {
+  debtPricing,
+  receiptDate,
+  receiptNumber,
+  receiptRow,
+  rupiah,
+} from "./format";
 import type {
   Customer,
   Debt,
@@ -40,20 +46,21 @@ export function buildShareMessages(
     .map((debts) => {
       const first = debts[0];
       const lines = debts.flatMap((debt) => {
-        const unitPrice =
-          debt.price_mode === "wholesale"
-            ? debt.wholesale_price
-            : debt.unit_price;
-        const calculatedPrice =
-          unitPrice ?? Math.round(debt.amount / Math.max(1, debt.qty));
+        const { unitPrice, grossAmount, discount } = debtPricing(debt);
         const remaining = debt.amount - debt.paid_amount;
         const itemLines = [
           (debt.item || "PIUTANG").toUpperCase(),
           receiptRow(
-            ` ${debt.qty} x ${receiptNumber.format(calculatedPrice)}`,
-            receiptNumber.format(debt.amount),
+            ` ${debt.qty} x ${receiptNumber.format(unitPrice)}`,
+            receiptNumber.format(discount > 0 ? grossAmount : debt.amount),
           ),
         ];
+        if (discount > 0) {
+          itemLines.push(
+            receiptRow(" DISKON", `-${receiptNumber.format(discount)}`),
+            receiptRow(" SUBTOTAL", receiptNumber.format(debt.amount)),
+          );
+        }
         if (debt.paid_amount > 0)
           itemLines.push(receiptRow(" SISA", receiptNumber.format(remaining)));
         return itemLines;
@@ -79,18 +86,17 @@ export function buildShareMessages(
         .filter(Boolean)
         .join(" · ");
       const lines = debts.map((debt) => {
-        const unitPrice =
-          debt.price_mode === "wholesale"
-            ? debt.wholesale_price
-            : debt.unit_price;
-        const calculatedPrice =
-          unitPrice ?? Math.round(debt.amount / Math.max(1, debt.qty));
+        const { unitPrice, grossAmount, discount } = debtPricing(debt);
         const remaining = debt.amount - debt.paid_amount;
         const paymentNote =
           debt.paid_amount > 0
             ? `; sudah dibayar ${rupiah.format(debt.paid_amount)}, sisa ${rupiah.format(remaining)}`
             : "";
-        return `• ${debt.item || "Piutang"}: ${debt.qty} × ${rupiah.format(calculatedPrice)} = ${rupiah.format(debt.amount)}${paymentNote}`;
+        const priceDetail =
+          discount > 0
+            ? `${debt.qty} × ${rupiah.format(unitPrice)} = ${rupiah.format(grossAmount)}; diskon ${rupiah.format(discount)}; subtotal ${rupiah.format(debt.amount)}`
+            : `${debt.qty} × ${rupiah.format(unitPrice)} = ${rupiah.format(debt.amount)}`;
+        return `• ${debt.item || "Piutang"}: ${priceDetail}${paymentNote}`;
       });
       return `${heading}\n${lines.join("\n")}`;
     })
