@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/table";
 import { TabsContent } from "@/components/ui/tabs";
 import {
-  ArrowLeftRight,
   CheckCircle2,
   Clock3,
   ReceiptText,
@@ -76,15 +75,81 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
       </div>
       {visibleDebts.length > 0 ? (
         <>
-          <p className="flex items-center gap-1.5 border-t border-border/60 bg-muted/20 px-4 py-2 text-[11px] text-muted-foreground @4xl:hidden">
-            <ArrowLeftRight className="size-3" aria-hidden="true" />
-            Geser tabel untuk melihat seluruh rincian
-          </p>
+          <div className="space-y-3 border-t border-border/60 bg-muted/20 p-3 @4xl:hidden">
+            {visibleDebts.map((debt) => {
+              const price =
+                (debt.price_mode === "wholesale"
+                  ? debt.wholesale_price
+                  : debt.unit_price) ?? debt.amount / Math.max(1, debt.qty);
+              const remaining = Math.max(0, debt.amount - debt.paid_amount);
+              const settled = remaining <= 0;
+              const partial = !settled && debt.paid_amount > 0;
+              return (
+                <article
+                  key={debt.id}
+                  className="rounded-xl border border-border/70 bg-card p-3 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-mono text-[11px] font-medium text-primary">
+                        {debt.invoice_no || "Tanpa nota"}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {formatDate(debt.date)}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold ${settled ? "bg-emerald-50 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-300" : partial ? "bg-sky-50 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300" : "bg-amber-50 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300"}`}
+                    >
+                      {settled ? "Lunas" : partial ? "Sebagian" : "Belum lunas"}
+                    </span>
+                  </div>
+                  <p className="mt-3 break-words text-sm font-semibold">
+                    {debt.item || "Piutang"}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+                    {debt.qty} × {rupiah.format(price)} · {debt.price_mode === "wholesale" ? "Grosir" : "Eceran"}
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Nilai piutang</p>
+                      <p className="mt-1 text-xs font-semibold tabular-nums">
+                        {rupiah.format(debt.amount)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-muted-foreground">Terbayar</p>
+                      <p className="mt-1 text-xs font-semibold text-emerald-900 tabular-nums dark:text-emerald-300">
+                        {rupiah.format(debt.paid_amount)}
+                      </p>
+                    </div>
+                    <div className="col-span-2 flex items-end justify-between gap-3 rounded-lg bg-muted/50 p-2.5">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Sisa tagihan</p>
+                        <p className="mt-1 text-sm font-bold text-primary tabular-nums">
+                          {rupiah.format(remaining)}
+                        </p>
+                      </div>
+                      <p className="max-w-[45%] text-right text-[10px] text-muted-foreground">
+                        {debt.cashier || "Kasir belum dicatat"}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+            <div className="rounded-xl border border-border/70 bg-card p-3">
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <span className="text-muted-foreground">Total {visibleDebts.length} catatan</span>
+                <span className="font-bold text-primary tabular-nums">Sisa {rupiah.format(outstanding)}</span>
+              </div>
+            </div>
+          </div>
           <div
             role="region"
             aria-label={`Tabel piutang ${selected.name}`}
             tabIndex={0}
-            className="overflow-x-auto [&>[data-slot=table-container]]:overflow-visible focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            className="hidden overflow-x-auto [&>[data-slot=table-container]]:overflow-visible focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring @4xl:block"
           >
             <Table className="min-w-[780px]">
               <caption className="sr-only">
