@@ -19,18 +19,18 @@ type Props = {
 export function CustomerPaymentsTab({ selectedPayments }: Props) {
   return (
     <TabsContent value="payments" className="m-0">
-      <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/70 px-4 py-5 @xl:px-5">
         <div>
-          <h3 className="font-bold">Riwayat pembayaran</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h3 className="text-sm font-bold">Riwayat pembayaran</h3>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             Semua pembayaran tunai dan penggunaan saldo pelanggan.
           </p>
         </div>
-        <div className="rounded-xl bg-emerald-50 px-3 py-2 text-right">
+        <div className="rounded-lg bg-emerald-50 px-3 py-2 text-right">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
             Total pembayaran
           </p>
-          <p className="font-extrabold text-emerald-900">
+          <p className="text-sm font-bold text-emerald-900 tabular-nums">
             {rupiah.format(
               selectedPayments.reduce(
                 (total, payment) => total + payment.amount,
@@ -41,25 +41,31 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
         </div>
       </div>
       {selectedPayments.length > 0 ? (
-        <Table>
+        <Table className="min-w-[520px]">
+          <caption className="sr-only">
+            Riwayat pembayaran tunai dan penggunaan saldo pelanggan.
+          </caption>
           <TableHeader className="bg-muted/40">
             <TableRow className="hover:bg-muted/40">
-              <TableHead className="pl-5 text-xs uppercase tracking-wide text-muted-foreground">
+              <TableHead className="pl-5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Tanggal
               </TableHead>
-              <TableHead className="text-xs uppercase tracking-wide text-muted-foreground">
+              <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Sumber pembayaran
               </TableHead>
-              <TableHead className="pr-5 text-right text-xs uppercase tracking-wide text-muted-foreground">
+              <TableHead className="pr-5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Nominal
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {selectedPayments.map((payment) => (
-              <TableRow key={payment.id} className="h-16">
+              <TableRow
+                key={payment.id}
+                className="h-20 border-border/60 hover:bg-secondary/20"
+              >
                 <TableCell className="pl-5">
-                  <span className="flex items-center gap-2 whitespace-nowrap font-medium">
+                  <span className="flex items-center gap-2 whitespace-nowrap text-xs font-medium">
                     <CalendarDays className="size-4 text-muted-foreground" />
                     {formatDate(payment.paid_at)}
                   </span>
@@ -67,7 +73,7 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
                 <TableCell>
                   {payment.source === "credit" ? (
                     <div>
-                      <Badge className="bg-violet-100 text-violet-800">
+                      <Badge className="rounded-md bg-violet-50 text-[10px] text-violet-800">
                         Saldo pelanggan
                       </Badge>
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -76,7 +82,7 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
                     </div>
                   ) : (
                     <div>
-                      <p className="font-semibold">Pembayaran tunai</p>
+                      <p className="text-sm font-semibold">Pembayaran tunai</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         Diterima oleh{" "}
                         {payment.received_by || "kasir tidak dicatat"}
@@ -85,7 +91,7 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
                   )}
                 </TableCell>
                 <TableCell className="pr-5 text-right">
-                  <span className="inline-flex rounded-xl bg-emerald-50 px-3 py-2 font-extrabold text-emerald-800">
+                  <span className="inline-flex rounded-lg bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800 tabular-nums">
                     + {rupiah.format(payment.amount)}
                   </span>
                 </TableCell>
@@ -100,7 +106,7 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
               <WalletCards className="size-5" />
             </div>
             <p className="mt-3 font-semibold">Belum ada pembayaran</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               Pembayaran pelanggan akan tampil di sini.
             </p>
           </div>
