@@ -128,7 +128,7 @@ export function CustomerList({
         <div
           role="group"
           aria-label="Filter status pelanggan"
-          className="grid grid-cols-[1fr_1.3fr_1fr] gap-1 rounded-xl bg-muted/70 p-1"
+          className="grid grid-cols-[0.9fr_1.45fr_0.9fr] gap-1 rounded-xl bg-muted/70 p-1"
         >
           {(
             [
@@ -137,17 +137,21 @@ export function CustomerList({
                 label: "Semua",
                 icon: UsersRound,
                 count: data.customers.length,
-                activeClass: "text-primary",
+                activeClass: "border-primary/20 bg-primary/5 text-primary",
                 iconClass: "text-primary",
+                badgeClass: "bg-primary/10 text-primary",
               },
               {
                 id: "unpaid",
-                label: "Menunggak",
+                label: "Perlu ditagih",
                 icon: Clock3,
                 count: data.customers.filter((customer) => customer.balance > 0)
                   .length,
-                activeClass: "text-amber-900 dark:text-amber-300",
+                activeClass:
+                  "border-amber-500/30 bg-amber-400/10 text-amber-900 dark:text-amber-300",
                 iconClass: "text-amber-900 dark:text-amber-300",
+                badgeClass:
+                  "bg-amber-400/15 text-amber-900 dark:text-amber-300",
               },
               {
                 id: "paid",
@@ -156,8 +160,11 @@ export function CustomerList({
                 count: data.customers.filter(
                   (customer) => customer.balance <= 0,
                 ).length,
-                activeClass: "text-emerald-900 dark:text-emerald-300",
+                activeClass:
+                  "border-emerald-500/25 bg-emerald-400/10 text-emerald-900 dark:text-emerald-300",
                 iconClass: "text-emerald-900 dark:text-emerald-300",
+                badgeClass:
+                  "bg-emerald-400/10 text-emerald-900 dark:text-emerald-300",
               },
             ] as const
           ).map(({ icon: Icon, ...filter }) => (
@@ -166,15 +173,17 @@ export function CustomerList({
               type="button"
               aria-pressed={customerStatus === filter.id}
               onClick={() => setCustomerStatus(filter.id)}
-              className={`flex h-8 min-w-0 items-center justify-center gap-1 rounded-lg px-1 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${customerStatus === filter.id ? `bg-card shadow-sm ring-1 ring-border/50 ${filter.activeClass}` : "text-muted-foreground hover:bg-card/60 hover:text-foreground"}`}
+              className={`flex h-8 min-w-0 items-center justify-center gap-0.5 rounded-lg border px-0.5 whitespace-nowrap transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${customerStatus === filter.id ? filter.activeClass : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-card/60 hover:text-foreground"}`}
             >
               <Icon
-                className={`size-3 shrink-0 ${customerStatus === filter.id ? filter.iconClass : ""}`}
+                className={`size-3 shrink-0 ${filter.iconClass}`}
                 aria-hidden="true"
               />
-              <span className="text-[11px] font-semibold">{filter.label}</span>
+              <span className="text-[10px] font-semibold tracking-tight">
+                {filter.label}
+              </span>
               <span
-                className={`min-w-4 shrink-0 rounded-md px-1 py-0.5 text-[10px] leading-none font-semibold tabular-nums ${customerStatus === filter.id ? "bg-current/5" : "bg-card/70"}`}
+                className={`min-w-4 shrink-0 rounded-md px-1 py-0.5 text-[9px] leading-none font-semibold tabular-nums ${filter.badgeClass}`}
               >
                 {filter.count}
               </span>

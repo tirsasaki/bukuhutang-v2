@@ -52,13 +52,6 @@ export function LedgerPage({ initialData }: Props) {
     (total, customer) => total + Math.max(0, customer.balance),
     0,
   );
-  const cashPaymentsThisMonth = data.payments.filter(
-    (payment) =>
-      payment.source !== "credit" &&
-      payment.paid_at.slice(0, 7) === new Date().toISOString().slice(0, 7),
-  );
-  const paidThisMonth = cashPaymentsThisMonth
-    .reduce((total, payment) => total + payment.amount, 0);
   const needsFollowUp = data.customers.filter(
     (customer) => customer.balance > 0,
   ).length;
@@ -138,8 +131,6 @@ export function LedgerPage({ initialData }: Props) {
         hasSelected={!!selected}
         openBalance={openBalance}
         needsFollowUp={needsFollowUp}
-        paidThisMonth={paidThisMonth}
-        paymentCountThisMonth={cashPaymentsThisMonth.length}
         setDebtOpen={setDebtOpen}
       />
       <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)_minmax(280px,340px)]">
