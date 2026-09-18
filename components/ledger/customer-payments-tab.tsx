@@ -1,4 +1,8 @@
 "use client";
+import { useId, useState } from "react";
+import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -26,9 +30,35 @@ export function CustomerPaymentsTab({
   selectedPayments,
   selectedDebts,
 }: Props) {
+  const filterId = useId();
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+  const hasFilters = Boolean(startDate || endDate || minAmount || maxAmount);
+  const dateError = Boolean(startDate && endDate && startDate > endDate);
+  const amountError = Boolean(
+    (minAmount && Number(minAmount) < 0) ||
+    (maxAmount && Number(maxAmount) < 0) ||
+    (minAmount && maxAmount && Number(minAmount) > Number(maxAmount)),
+  );
+  const visiblePayments = selectedPayments.filter((payment) => {
+    if (dateError || amountError) return false;
+    if (startDate || endDate) {
+      const date = new Date(payment.paid_at);
+      if (Number.isNaN(date.getTime())) return false;
+      // Samakan tanggal lokal dengan tanggal pembayaran yang ditampilkan.
+      const day = format(date, "yyyy-MM-dd");
+      if (startDate && day < startDate) return false;
+      if (endDate && day > endDate) return false;
+    }
+    if (minAmount && payment.amount < Number(minAmount)) return false;
+    if (maxAmount && payment.amount > Number(maxAmount)) return false;
+    return true;
+  });
   const debtById = new Map(selectedDebts.map((debt) => [debt.id, debt]));
   return (
-    <TabsContent value="payments" className="m-0">
+    <TabsContent value="payments" className="m-0 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/70 px-4 py-5 @xl:px-5">
         <div>
           <h3 className="text-sm font-bold">Riwayat pembayaran</h3>
@@ -38,11 +68,11 @@ export function CustomerPaymentsTab({
         </div>
         <div className="rounded-lg bg-emerald-50 px-3 py-2 text-right dark:bg-emerald-400/15">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-            Total pembayaran
+            {hasFilters ? "Total hasil filter" : "Total pembayaran"}
           </p>
           <p className="text-sm font-bold text-emerald-900 tabular-nums dark:text-emerald-200">
             {rupiah.format(
-              selectedPayments.reduce(
+              visiblePayments.reduce(
                 (total, payment) => total + payment.amount,
                 0,
               ),
@@ -50,7 +80,60 @@ export function CustomerPaymentsTab({
           </p>
         </div>
       </div>
-      {selectedPayments.length > 0 ? (
+      <div className="space-y-3 border-b border-border/70 bg-muted/20 px-4 py-3 @xl:px-5">
+        <div role="group" aria-label="Filter pembayaran" className="grid grid-cols-1 gap-3 @sm:grid-cols-2 @3xl:grid-cols-4">
+          <label className="min-w-0 space-y-1.5 text-xs font-medium">
+            <span>Dari tanggal</span>
+            <Input type="date" value={startDate} max={endDate || undefined}
+              onChange={(event) => setStartDate(event.target.value)}
+              aria-invalid={dateError} aria-describedby={dateError ? `${filterId}-error` : undefined}
+              className="text-xs!" />
+          </label>
+          <label className="min-w-0 space-y-1.5 text-xs font-medium">
+            <span>Sampai tanggal</span>
+            <Input type="date" value={endDate} min={startDate || undefined}
+              onChange={(event) => setEndDate(event.target.value)}
+              aria-invalid={dateError} aria-describedby={dateError ? `${filterId}-error` : undefined}
+              className="text-xs!" />
+          </label>
+          <label className="min-w-0 space-y-1.5 text-xs font-medium">
+            <span>Nominal minimum (Rp)</span>
+            <Input type="number" min="0" step="any" inputMode="decimal" placeholder="Tanpa batas"
+              value={minAmount} onChange={(event) => setMinAmount(event.target.value)}
+              aria-invalid={amountError} aria-describedby={amountError ? `${filterId}-error` : undefined}
+              className="text-xs!" />
+          </label>
+          <label className="min-w-0 space-y-1.5 text-xs font-medium">
+            <span>Nominal maksimum (Rp)</span>
+            <Input type="number" min="0" step="any" inputMode="decimal" placeholder="Tanpa batas"
+              value={maxAmount} onChange={(event) => setMaxAmount(event.target.value)}
+              aria-invalid={amountError} aria-describedby={amountError ? `${filterId}-error` : undefined}
+              className="text-xs!" />
+          </label>
+        </div>
+        {(dateError || amountError) && (
+          <p id={`${filterId}-error`} role="alert" className="text-xs text-destructive">
+            {dateError && "Tanggal awal tidak boleh melewati tanggal akhir. "}
+            {amountError && "Nominal harus nol atau lebih, dan minimum tidak boleh melebihi maksimum."}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p role="status" className="text-xs text-muted-foreground">
+            Menampilkan {visiblePayments.length} dari {selectedPayments.length} pembayaran
+          </p>
+          <Button type="button" variant="ghost" size="sm" disabled={!hasFilters}
+            className="h-7 px-2 text-xs!"
+            onClick={() => {
+              setStartDate("");
+              setEndDate("");
+              setMinAmount("");
+              setMaxAmount("");
+            }}>
+            Hapus filter
+          </Button>
+        </div>
+      </div>
+      {visiblePayments.length > 0 ? (
         <Table className="min-w-[760px]">
           <caption className="sr-only">
             Riwayat pembayaran, barang terkait, dan sumber pembayaran
@@ -73,7 +156,7 @@ export function CustomerPaymentsTab({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {selectedPayments.map((payment) => {
+            {visiblePayments.map((payment) => {
               const debt = debtById.get(payment.debt_item_id);
               const price = debt
                 ? ((debt.price_mode === "wholesale"
@@ -153,9 +236,13 @@ export function CustomerPaymentsTab({
             <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-muted text-muted-foreground">
               <WalletCards className="size-5" />
             </div>
-            <p className="mt-3 font-semibold">Belum ada pembayaran</p>
+            <p className="mt-3 font-semibold">
+              {hasFilters ? "Tidak ada pembayaran yang sesuai" : "Belum ada pembayaran"}
+            </p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Pembayaran pelanggan akan tampil di sini.
+              {hasFilters
+                ? "Ubah atau hapus filter untuk melihat pembayaran lainnya."
+                : "Pembayaran pelanggan akan tampil di sini."}
             </p>
           </div>
         </div>

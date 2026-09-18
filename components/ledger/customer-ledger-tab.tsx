@@ -13,9 +13,7 @@ import { TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeftRight,
   CheckCircle2,
-  CircleDot,
   Clock3,
-  ListFilter,
   ReceiptText,
   UserRound,
 } from "lucide-react";
@@ -45,7 +43,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
             {selectedDebts.length} catatan · {openCount} piutang aktif
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 items-center">
           <div
             role="group"
             aria-label="Filter buku piutang"
@@ -55,9 +53,8 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
               type="button"
               aria-pressed={filter === "all"}
               onClick={() => setFilter("all")}
-              className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-semibold transition-colors ${filter === "all" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px]! font-semibold! transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filter === "all" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <ListFilter className="size-3" aria-hidden="true" />
               Semua
               <span className="rounded bg-muted px-1 tabular-nums">
                 {selectedDebts.length}
@@ -67,19 +64,14 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
               type="button"
               aria-pressed={filter === "active"}
               onClick={() => setFilter("active")}
-              className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-semibold transition-colors ${filter === "active" ? "bg-card text-amber-800 shadow-sm dark:text-amber-300" : "text-muted-foreground hover:text-foreground"}`}
+              className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px]! font-semibold! transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filter === "active" ? "bg-card text-amber-800 shadow-sm dark:text-amber-300" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <CircleDot className="size-3" aria-hidden="true" />
               Aktif
               <span className="rounded bg-muted px-1 tabular-nums">
                 {openCount}
               </span>
             </button>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-secondary/70 px-2.5 py-1.5 text-[11px] font-medium text-primary">
-            <ReceiptText className="size-3.5" aria-hidden="true" />
-            Rincian per barang
-          </span>
         </div>
       </div>
       {visibleDebts.length > 0 ? (
