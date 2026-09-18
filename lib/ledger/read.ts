@@ -9,7 +9,12 @@ type CustomerRow = {
 };
 type DebtRow = Omit<Debt, "paid_amount">;
 type PaymentRow = Omit<Payment, "customer_id">;
-type CreditRow = { customer_id: string; amount: number };
+type CreditRow = {
+  customer_id: string;
+  amount: number;
+  note: string;
+  created_at: string;
+};
 
 function addToGroup<T>(groups: Map<string, T[]>, key: string, value: T) {
   const group = groups.get(key);
@@ -47,7 +52,7 @@ export async function readLedgerData(): Promise<LedgerData> {
       .order("paid_at", { ascending: false }),
     supabase
       .from("credit_transactions")
-      .select("customer_id,amount")
+      .select("customer_id,amount,note,created_at")
       .eq("owner_id", user.id),
     supabase
       .from("import_batches")
@@ -108,18 +113,26 @@ export async function readLedgerData(): Promise<LedgerData> {
   const debtsByCustomer = new Map<string, Debt[]>();
   const paymentsByCustomer = new Map<string, Payment[]>();
   const creditByCustomer = new Map<string, number>();
+  const overpaymentByCustomerAndTime = new Map<string, number>();
   debtRows.forEach((debt) =>
     addToGroup(debtsByCustomer, debt.customer_id, debt),
   );
   paymentRows.forEach((payment) =>
     addToGroup(paymentsByCustomer, payment.customer_id, payment),
   );
-  credits.forEach((credit) =>
+  credits.forEach((credit) => {
     creditByCustomer.set(
       credit.customer_id,
       (creditByCustomer.get(credit.customer_id) ?? 0) + Number(credit.amount),
-    ),
-  );
+    );
+    if (credit.note === "Kelebihan pembayaran pelunasan") {
+      const key = `${credit.customer_id}|${credit.created_at}`;
+      overpaymentByCustomerAndTime.set(
+        key,
+        (overpaymentByCustomerAndTime.get(key) ?? 0) + Number(credit.amount),
+      );
+    }
+  });
 
   const customerRows = customers
     .map((customer) => {
@@ -133,19 +146,40 @@ export async function readLedgerData(): Promise<LedgerData> {
         (total, payment) => total + payment.amount,
         0,
       );
+      const lastPaymentAt = customerPayments[0]?.paid_at ?? null;
+      const lastPaymentRows = lastPaymentAt
+        ? customerPayments.filter(
+            (payment) => payment.paid_at === lastPaymentAt,
+          )
+        : [];
+      const lastCashApplied = lastPaymentRows
+        .filter((payment) => payment.source !== "credit")
+        .reduce((total, payment) => total + payment.amount, 0);
+      const lastCreditApplied = lastPaymentRows
+        .filter((payment) => payment.source === "credit")
+        .reduce((total, payment) => total + payment.amount, 0);
+      const lastOverpayment = lastPaymentAt
+        ? (overpaymentByCustomerAndTime.get(
+            `${customer.id}|${lastPaymentAt}`,
+          ) ?? 0)
+        : 0;
+      const lastRecordedPayment = lastCashApplied + lastOverpayment;
       return {
         ...customer,
         balance: Math.max(0, totalDebt - totalPaid),
         credit_balance: Math.max(0, creditByCustomer.get(customer.id) ?? 0),
         debt_count: customerDebts.length,
         last_debt_at: customerDebts[0]?.date ?? null,
-        last_payment_at: customerPayments[0]?.paid_at ?? null,
-        last_payment_amount: customerPayments[0]?.amount ?? 0,
+        last_payment_at: lastPaymentAt,
+        last_payment_amount:
+          lastRecordedPayment > 0
+            ? lastRecordedPayment
+            : lastCreditApplied,
         last_activity_at:
           [
             customer.created_at,
             customerDebts[0]?.created_at,
-            customerPayments[0]?.paid_at,
+            lastPaymentAt,
           ]
             .filter(Boolean)
             .sort()
