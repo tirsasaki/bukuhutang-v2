@@ -69,11 +69,10 @@ export function ImportDialog({
     <Dialog open={importOpen} onOpenChange={setImportOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Pulihkan cadangan lama</DialogTitle>
+          <DialogTitle>Pulihkan cadangan data</DialogTitle>
           <DialogDescription>
-            Pilih satu atau beberapa berkas JSON dari folder{" "}
-            <strong>backups</strong>. Identitas lama dipertahankan agar catatan
-            ganda dapat dilewati dengan aman.
+            Pilih satu atau beberapa berkas JSON cadangan Buku Piutang.
+            Identitas data dipertahankan agar catatan ganda dapat dilewati.
           </DialogDescription>
         </DialogHeader>
         <button
@@ -87,7 +86,7 @@ export function ImportDialog({
               Pilih berkas cadangan JSON
             </span>
             <span className="mt-1 block text-sm text-muted-foreground">
-              Anda dapat memilih kedua berkas sekaligus
+              Cadangan terbaru dan format lama didukung
             </span>
           </span>
         </button>
@@ -102,8 +101,8 @@ export function ImportDialog({
         <div className="flex items-start gap-2 rounded-xl bg-secondary p-3 text-sm text-secondary-foreground">
           <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
           <p>
-            Impor yang sama tidak akan menggandakan pelanggan, piutang, atau
-            pembayaran.
+            Impor yang sama tidak akan menggandakan pelanggan, transaksi,
+            kasir, atau informasi toko.
           </p>
         </div>
         <DialogFooter>
