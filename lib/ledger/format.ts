@@ -29,7 +29,7 @@ export function newDebtDraft(): DebtDraft {
     item: "",
     qty: "1",
     unitPrice: "",
-    wholesalePrice: "",
+    wholesaleTotal: "",
     discount: "",
     priceMode: "retail",
   };
