@@ -171,10 +171,14 @@ export function CustomerDetail({
               </span>
             </div>
             <CustomerLedgerTab
+              key={selected.id}
               selected={selected}
               selectedDebts={selectedDebts}
             />
-            <CustomerPaymentsTab selectedPayments={selectedPayments} />
+            <CustomerPaymentsTab
+              selectedPayments={selectedPayments}
+              selectedDebts={selectedDebts}
+            />
             <CustomerProfileTab
               selected={selected}
               setEditCustomerOpen={setEditCustomerOpen}

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -12,7 +13,9 @@ import { TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeftRight,
   CheckCircle2,
+  CircleDot,
   Clock3,
+  ListFilter,
   ReceiptText,
   UserRound,
 } from "lucide-react";
@@ -21,31 +24,65 @@ import type { Customer, Debt } from "@/lib/ledger/types";
 
 type Props = { selected: Customer; selectedDebts: Debt[] };
 export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
-  const total = selectedDebts.reduce((sum, debt) => sum + debt.amount, 0);
-  const paid = selectedDebts.reduce((sum, debt) => sum + debt.paid_amount, 0);
-  const outstanding = selectedDebts.reduce(
+  const [filter, setFilter] = useState<"all" | "active">("all");
+  const activeDebts = selectedDebts.filter(
+    (debt) => debt.amount > debt.paid_amount,
+  );
+  const visibleDebts = filter === "active" ? activeDebts : selectedDebts;
+  const total = visibleDebts.reduce((sum, debt) => sum + debt.amount, 0);
+  const paid = visibleDebts.reduce((sum, debt) => sum + debt.paid_amount, 0);
+  const outstanding = visibleDebts.reduce(
     (sum, debt) => sum + Math.max(0, debt.amount - debt.paid_amount),
     0,
   );
-  const openCount = selectedDebts.filter(
-    (debt) => debt.amount > debt.paid_amount,
-  ).length;
+  const openCount = activeDebts.length;
   return (
     <TabsContent value="ledger" className="m-0 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-5 @xl:px-5">
         <div>
           <h3 className="text-sm font-bold">Riwayat buku piutang</h3>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {selectedDebts.length} catatan · {openCount} belum lunas · Transaksi
-            terbaru di atas
+            {selectedDebts.length} catatan · {openCount} piutang aktif
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-lg bg-secondary/70 px-2.5 py-1.5 text-[11px] font-medium text-primary">
-          <ReceiptText className="size-3.5" aria-hidden="true" />
-          Rincian per barang
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <div
+            role="group"
+            aria-label="Filter buku piutang"
+            className="flex items-center rounded-lg border border-border/70 bg-muted/60 p-0.5"
+          >
+            <button
+              type="button"
+              aria-pressed={filter === "all"}
+              onClick={() => setFilter("all")}
+              className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-semibold transition-colors ${filter === "all" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <ListFilter className="size-3" aria-hidden="true" />
+              Semua
+              <span className="rounded bg-muted px-1 tabular-nums">
+                {selectedDebts.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={filter === "active"}
+              onClick={() => setFilter("active")}
+              className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-semibold transition-colors ${filter === "active" ? "bg-card text-amber-800 shadow-sm dark:text-amber-300" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <CircleDot className="size-3" aria-hidden="true" />
+              Aktif
+              <span className="rounded bg-muted px-1 tabular-nums">
+                {openCount}
+              </span>
+            </button>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-secondary/70 px-2.5 py-1.5 text-[11px] font-medium text-primary">
+            <ReceiptText className="size-3.5" aria-hidden="true" />
+            Rincian per barang
+          </span>
+        </div>
       </div>
-      {selectedDebts.length > 0 ? (
+      {visibleDebts.length > 0 ? (
         <>
           <p className="flex items-center gap-1.5 border-t border-border/60 bg-muted/20 px-4 py-2 text-[11px] text-muted-foreground @4xl:hidden">
             <ArrowLeftRight className="size-3" aria-hidden="true" />
@@ -103,7 +140,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {selectedDebts.map((debt) => {
+                {visibleDebts.map((debt) => {
                   const price =
                     (debt.price_mode === "wholesale"
                       ? debt.wholesale_price
@@ -208,7 +245,7 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
               <TableFooter className="bg-muted/30">
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={2} className="py-4 pl-5 text-xs">
-                    Total {selectedDebts.length} catatan
+                    Total {visibleDebts.length} catatan
                   </TableCell>
                   <TableCell className="text-right text-xs font-bold tabular-nums">
                     {rupiah.format(total)}
@@ -220,7 +257,9 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
                     {rupiah.format(outstanding)}
                   </TableCell>
                   <TableCell className="pr-5 text-right text-[11px] text-muted-foreground">
-                    {openCount} belum lunas
+                    {visibleDebts.filter(
+                      (debt) => debt.amount > debt.paid_amount,
+                    ).length} piutang aktif
                   </TableCell>
                 </TableRow>
               </TableFooter>
@@ -233,9 +272,15 @@ export function CustomerLedgerTab({ selected, selectedDebts }: Props) {
             <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-secondary text-primary">
               <ReceiptText className="size-5" aria-hidden="true" />
             </div>
-            <p className="mt-3 text-sm font-semibold">Belum ada piutang</p>
+            <p className="mt-3 text-sm font-semibold">
+              {filter === "active"
+                ? "Tidak ada piutang aktif"
+                : "Belum ada piutang"}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Catatan piutang pelanggan akan tampil di sini.
+              {filter === "active"
+                ? "Seluruh catatan piutang pelanggan sudah lunas."
+                : "Catatan piutang pelanggan akan tampil di sini."}
             </p>
           </div>
         </div>

@@ -9,14 +9,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TabsContent } from "@/components/ui/tabs";
-import { CalendarDays, WalletCards } from "lucide-react";
+import {
+  CalendarDays,
+  PackageOpen,
+  ReceiptText,
+  WalletCards,
+} from "lucide-react";
 
 import { formatDate, rupiah } from "@/lib/ledger/format";
-import type { Payment } from "@/lib/ledger/types";
+import type { Debt, Payment } from "@/lib/ledger/types";
 type Props = {
   selectedPayments: Payment[];
+  selectedDebts: Debt[];
 };
-export function CustomerPaymentsTab({ selectedPayments }: Props) {
+export function CustomerPaymentsTab({
+  selectedPayments,
+  selectedDebts,
+}: Props) {
+  const debtById = new Map(selectedDebts.map((debt) => [debt.id, debt]));
   return (
     <TabsContent value="payments" className="m-0">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/70 px-4 py-5 @xl:px-5">
@@ -41,14 +51,18 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
         </div>
       </div>
       {selectedPayments.length > 0 ? (
-        <Table className="min-w-[520px]">
+        <Table className="min-w-[760px]">
           <caption className="sr-only">
-            Riwayat pembayaran tunai dan penggunaan saldo pelanggan.
+            Riwayat pembayaran, barang terkait, dan sumber pembayaran
+            pelanggan.
           </caption>
           <TableHeader className="bg-muted/40">
             <TableRow className="hover:bg-muted/40">
               <TableHead className="pl-5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Tanggal
+              </TableHead>
+              <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Barang / piutang
               </TableHead>
               <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Sumber pembayaran
@@ -59,21 +73,54 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {selectedPayments.map((payment) => (
-              <TableRow
-                key={payment.id}
-                className="h-20 border-border/60 hover:bg-secondary/20"
-              >
+            {selectedPayments.map((payment) => {
+              const debt = debtById.get(payment.debt_item_id);
+              const price = debt
+                ? ((debt.price_mode === "wholesale"
+                    ? debt.wholesale_price
+                    : debt.unit_price) ??
+                  debt.amount / Math.max(1, debt.qty))
+                : 0;
+              return (
+                <TableRow
+                  key={payment.id}
+                  className="h-20 border-border/60 hover:bg-secondary/20"
+                >
                 <TableCell className="pl-5">
                   <span className="flex items-center gap-2 whitespace-nowrap text-xs font-medium">
                     <CalendarDays className="size-4 text-muted-foreground" />
                     {formatDate(payment.paid_at)}
                   </span>
                 </TableCell>
+                <TableCell className="min-w-[190px]">
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
+                      <PackageOpen className="size-3.5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-semibold">
+                        {debt?.item || "Piutang"}
+                      </p>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                        <span className="tabular-nums">
+                          {debt
+                            ? `${debt.qty} × ${rupiah.format(price)}`
+                            : "Rincian lama"}
+                        </span>
+                        {debt?.invoice_no && (
+                          <span className="inline-flex items-center gap-1 font-mono">
+                            <ReceiptText className="size-3" aria-hidden="true" />
+                            {debt.invoice_no}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </TableCell>
                 <TableCell>
                   {payment.source === "credit" ? (
                     <div>
-                      <Badge className="rounded-md bg-violet-50 text-[10px] text-violet-800">
+                      <Badge className="rounded-md bg-violet-50 text-[10px] text-violet-800 dark:bg-violet-400/15 dark:text-violet-300">
                         Saldo pelanggan
                       </Badge>
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -95,8 +142,9 @@ export function CustomerPaymentsTab({ selectedPayments }: Props) {
                     + {rupiah.format(payment.amount)}
                   </span>
                 </TableCell>
-              </TableRow>
-            ))}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       ) : (
