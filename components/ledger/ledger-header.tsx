@@ -17,17 +17,10 @@ type Props = {
   storeName: string;
   hasSelected: boolean;
   openBalance: number;
-  needsFollowUp: number;
   setDebtOpen: (open: boolean) => void;
 };
 
-function OpenBalanceSummary({
-  openBalance,
-  customerCount,
-}: {
-  openBalance: number;
-  customerCount: number;
-}) {
+function OpenBalanceSummary({ openBalance }: { openBalance: number }) {
   const formattedBalance = rupiah.format(openBalance);
 
   return (
@@ -46,10 +39,6 @@ function OpenBalanceSummary({
           {formattedBalance}
         </dd>
       </dl>
-      <span className="hidden h-5 w-px bg-border/60 2xl:block" aria-hidden="true" />
-      <p className="hidden shrink-0 text-[10px] text-muted-foreground 2xl:block">
-        {customerCount} pelanggan
-      </p>
     </div>
   );
 }
@@ -58,7 +47,6 @@ export function LedgerHeader({
   storeName,
   hasSelected,
   openBalance,
-  needsFollowUp,
   setDebtOpen,
 }: Props) {
   const router = useRouter();
@@ -92,10 +80,7 @@ export function LedgerHeader({
       </div>
 
       <div className="col-span-2 row-start-2 min-w-0 border-t border-border/50 pt-2 md:ml-auto md:shrink-0 md:border-t-0 md:border-r md:border-border/60 md:pt-0 md:pr-3">
-        <OpenBalanceSummary
-          openBalance={openBalance}
-          customerCount={needsFollowUp}
-        />
+        <OpenBalanceSummary openBalance={openBalance} />
       </div>
 
       <nav
