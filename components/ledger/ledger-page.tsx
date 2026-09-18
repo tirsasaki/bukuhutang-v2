@@ -105,6 +105,25 @@ export function LedgerPage({ initialData }: Props) {
     }
   }
 
+  async function deleteCustomer() {
+    if (!selected) return;
+    const customerName = selected.name;
+    setSaving(true);
+    try {
+      await postAction({ action: "delete_customer", customerId: selected.id });
+      setMobileDetailOpen(false);
+      toast.success(`Data ${customerName} berhasil dihapus.`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Data pelanggan belum dapat dihapus.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground lg:flex lg:h-dvh lg:min-h-0 lg:flex-col lg:overflow-hidden">
       <Toaster richColors position="top-right" />
@@ -141,6 +160,8 @@ export function LedgerPage({ initialData }: Props) {
           setDebtOpen={setDebtOpen}
           setPaymentOpen={setPaymentOpen}
           setEditCustomerOpen={setEditCustomerOpen}
+          saving={saving}
+          onDeleteCustomer={deleteCustomer}
           mobileDetailOpen={mobileDetailOpen}
           onMobileBack={() => {
             setMobileDetailOpen(false);

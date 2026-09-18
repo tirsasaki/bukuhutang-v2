@@ -30,6 +30,8 @@ type Props = {
   setDebtOpen: (open: boolean) => void;
   setPaymentOpen: (open: boolean) => void;
   setEditCustomerOpen: (open: boolean) => void;
+  saving: boolean;
+  onDeleteCustomer: () => Promise<void>;
   mobileDetailOpen: boolean;
   onMobileBack: () => void;
 };
@@ -41,6 +43,8 @@ export function CustomerDetail({
   setDebtOpen,
   setPaymentOpen,
   setEditCustomerOpen,
+  saving,
+  onDeleteCustomer,
   mobileDetailOpen,
   onMobileBack,
 }: Props) {
@@ -200,6 +204,8 @@ export function CustomerDetail({
             <CustomerProfileTab
               selected={selected}
               setEditCustomerOpen={setEditCustomerOpen}
+              saving={saving}
+              onDeleteCustomer={onDeleteCustomer}
             />
           </Tabs>
         </div>

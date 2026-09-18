@@ -46,6 +46,21 @@ export async function POST(request: Request) {
       return Response.json({ ok: true, id: customerId });
     }
 
+    if (action === "delete_customer") {
+      const customerId = String(body.customerId ?? "");
+      if (!customerId) return jsonError("Pelanggan tidak valid.");
+      const { data, error } = await supabase
+        .from("customers")
+        .delete()
+        .eq("id", customerId)
+        .eq("owner_id", user.id)
+        .select("id")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return jsonError("Pelanggan tidak ditemukan.", 404);
+      return Response.json({ ok: true, id: customerId });
+    }
+
     if (action === "create_debt") {
       const customerId = String(body.customerId ?? "");
       const date = String(body.date ?? "");
