@@ -41,10 +41,10 @@ export function LedgerHeader({ storeName, hasSelected, setDebtOpen }: Props) {
           </p>
         </div>
       </div>
-      <div className="col-span-2 row-start-2 sm:ml-auto sm:flex">
+      <div className="hidden lg:ml-auto lg:flex">
         <Button
           type="button"
-          className="h-9 w-full gap-1.5 rounded-lg px-3 text-xs! font-semibold! shadow-sm sm:w-auto"
+          className="h-9 gap-1.5 rounded-lg px-3 text-xs! font-semibold! shadow-sm"
           disabled={!hasSelected}
           onClick={() => setDebtOpen(true)}
         >

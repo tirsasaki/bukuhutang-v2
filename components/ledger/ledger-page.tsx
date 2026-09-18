@@ -22,6 +22,7 @@ export function LedgerPage() {
   const [debtOpen, setDebtOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const selected =
     data.customers.find((customer) => customer.id === selectedId) ?? null;
   const selectedDebts = useMemo(
@@ -112,14 +113,20 @@ export function LedgerPage() {
         openBalance={openBalance}
         needsFollowUp={needsFollowUp}
         paidThisMonth={paidThisMonth}
+        mobileDetailOpen={mobileDetailOpen}
       />
       <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[400px_minmax(0,1fr)]">
         <CustomerList
           data={data}
           loading={loading}
           selectedId={selectedId}
-          setSelectedId={setSelectedId}
+          setSelectedId={(id) => {
+            setSelectedId(id);
+            setMobileDetailOpen(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
           setCustomerOpen={setCustomerOpen}
+          mobileDetailOpen={mobileDetailOpen}
         />
         <CustomerDetail
           selected={selected}
@@ -129,6 +136,11 @@ export function LedgerPage() {
           setDebtOpen={setDebtOpen}
           setPaymentOpen={setPaymentOpen}
           setEditCustomerOpen={setEditCustomerOpen}
+          mobileDetailOpen={mobileDetailOpen}
+          onMobileBack={() => {
+            setMobileDetailOpen(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
         />
       </div>
       <CustomerDialogs

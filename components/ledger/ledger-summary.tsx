@@ -13,12 +13,14 @@ type Props = {
   openBalance: number;
   needsFollowUp: number;
   paidThisMonth: number;
+  mobileDetailOpen: boolean;
 };
 export function LedgerSummary({
   data,
   openBalance,
   needsFollowUp,
   paidThisMonth,
+  mobileDetailOpen,
 }: Props) {
   const summaryCards = [
     {
@@ -67,7 +69,7 @@ export function LedgerSummary({
   return (
     <section
       aria-label="Ringkasan buku piutang"
-      className="shrink-0 border-b border-border/70 bg-muted/20 px-4 py-4 lg:px-6"
+      className={`${mobileDetailOpen ? "hidden" : "block"} shrink-0 border-b border-border/70 bg-muted/20 px-4 py-4 lg:block lg:px-6`}
     >
       <dl className="grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2 lg:grid-cols-4">
         {summaryCards.map(

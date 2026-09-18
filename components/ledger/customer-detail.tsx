@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  ArrowLeft,
   BookOpenText,
   CalendarDays,
   CheckCircle2,
@@ -29,6 +30,8 @@ type Props = {
   setDebtOpen: (open: boolean) => void;
   setPaymentOpen: (open: boolean) => void;
   setEditCustomerOpen: (open: boolean) => void;
+  mobileDetailOpen: boolean;
+  onMobileBack: () => void;
 };
 export function CustomerDetail({
   selected,
@@ -38,9 +41,23 @@ export function CustomerDetail({
   setDebtOpen,
   setPaymentOpen,
   setEditCustomerOpen,
+  mobileDetailOpen,
+  onMobileBack,
 }: Props) {
   return (
-    <section className="min-w-0 overflow-y-auto bg-muted/30 p-3 sm:p-5 lg:p-6">
+    <section
+      className={`${mobileDetailOpen ? "block" : "hidden"} min-w-0 overflow-y-auto bg-muted/30 p-3 sm:p-5 lg:block lg:p-6`}
+    >
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="mb-2 -ml-1 gap-1.5 lg:hidden"
+        onClick={onMobileBack}
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" />
+        Daftar pelanggan
+      </Button>
       {!selected ? (
         <div className="grid min-h-[420px] place-items-center">
           <div className="max-w-sm text-center">
