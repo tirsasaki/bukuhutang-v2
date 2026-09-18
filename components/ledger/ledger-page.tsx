@@ -14,8 +14,13 @@ import { LedgerHeader } from "./ledger-header";
 import { LedgerSummary } from "./ledger-summary";
 import { PaymentDialog } from "./payment-dialog";
 import { ShareDialog } from "./share-dialog";
-export function LedgerPage() {
-  const { data, selectedId, setSelectedId, loading, postAction } = useLedger();
+import type { LedgerData } from "@/lib/ledger/types";
+
+type Props = { initialData?: LedgerData };
+
+export function LedgerPage({ initialData }: Props) {
+  const { data, selectedId, setSelectedId, loading, postAction } =
+    useLedger(initialData);
   const [saving, setSaving] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [editCustomerOpen, setEditCustomerOpen] = useState(false);
