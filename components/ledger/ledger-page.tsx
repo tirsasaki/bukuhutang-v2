@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { useLedger } from "@/hooks/use-ledger";
 import { useLedgerTools } from "@/hooks/use-ledger-tools";
 import { asNumber, rupiah } from "@/lib/ledger/format";
-import { CollectionPanel } from "./collection-panel";
 import { CustomerDetail } from "./customer-detail";
 import { CustomerDialogs } from "./customer-dialogs";
 import { CustomerList } from "./customer-list";
@@ -15,6 +14,7 @@ import { LedgerHeader } from "./ledger-header";
 import { LedgerSummary } from "./ledger-summary";
 import { PaymentDialog } from "./payment-dialog";
 import { ShareDialog } from "./share-dialog";
+import { TrendPanel } from "./trend-panel";
 import type { LedgerData } from "@/lib/ledger/types";
 
 type Props = { initialData?: LedgerData };
@@ -146,9 +146,7 @@ export function LedgerPage({ initialData }: Props) {
         paidThisMonth={paidThisMonth}
         mobileDetailOpen={mobileDetailOpen}
       />
-      <div
-        className={`grid lg:min-h-0 lg:flex-1 ${selected ? "lg:grid-cols-[minmax(280px,340px)_minmax(280px,340px)_minmax(0,1fr)]" : "lg:grid-cols-[minmax(320px,400px)_minmax(340px,520px)] lg:justify-center"}`}
-      >
+      <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,320px)_minmax(280px,340px)_minmax(0,1fr)]">
         <CustomerList
           data={data}
           loading={loading}
@@ -157,30 +155,24 @@ export function LedgerPage({ initialData }: Props) {
           setCustomerOpen={setCustomerOpen}
           mobileDetailOpen={mobileDetailOpen}
         />
-        <CollectionPanel
-          data={data}
-          selectedId={selectedId}
-          onSelectCustomer={selectCustomer}
+        <TrendPanel data={data} />
+        <CustomerDetail
+          selected={selected}
+          selectedDebts={selectedDebts}
+          selectedPayments={selectedPayments}
+          setShareOpen={setShareOpen}
+          setDebtOpen={setDebtOpen}
+          setPaymentOpen={setPaymentOpen}
+          setEditCustomerOpen={setEditCustomerOpen}
+          saving={saving}
+          onDeleteCustomer={deleteCustomer}
+          postAction={postAction}
+          mobileDetailOpen={mobileDetailOpen}
+          onMobileBack={() => {
+            setMobileDetailOpen(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
         />
-        {selected && (
-          <CustomerDetail
-            selected={selected}
-            selectedDebts={selectedDebts}
-            selectedPayments={selectedPayments}
-            setShareOpen={setShareOpen}
-            setDebtOpen={setDebtOpen}
-            setPaymentOpen={setPaymentOpen}
-            setEditCustomerOpen={setEditCustomerOpen}
-            saving={saving}
-            onDeleteCustomer={deleteCustomer}
-            postAction={postAction}
-            mobileDetailOpen={mobileDetailOpen}
-            onMobileBack={() => {
-              setMobileDetailOpen(false);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
-        )}
       </div>
       <CustomerDialogs
         customerOpen={customerOpen}
