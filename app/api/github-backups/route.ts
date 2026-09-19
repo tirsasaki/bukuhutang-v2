@@ -36,7 +36,7 @@ export async function GET() {
     const { user } = await requireApiUser();
     if (!isGitHubBackupConfigured())
       return Response.json({ ok: true, configured: false, backups: [] });
-    const backups = await listGitHubBackups(user.id);
+    const backups = (await listGitHubBackups(user.id)).slice(0, 3);
     return Response.json({ ok: true, configured: true, backups });
   } catch (error) {
     return errorResponse(error);
