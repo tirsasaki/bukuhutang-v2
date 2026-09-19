@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   AlertCircle,
   CheckCircle2,
+  Clock3,
   CloudDownload,
   CloudUpload,
   Download,
@@ -36,12 +37,24 @@ function formatSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function backupLabel(backup: GitHubBackup) {
-  if (!backup.createdAt) return "Cadangan lama";
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(backup.createdAt));
+function backupTimeInformation(backup: GitHubBackup) {
+  if (!backup.createdAt) return null;
+  const createdAt = new Date(backup.createdAt);
+  if (Number.isNaN(createdAt.getTime())) return null;
+  return {
+    date: new Intl.DateTimeFormat("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "Asia/Jakarta",
+    }).format(createdAt),
+    time: new Intl.DateTimeFormat("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
+      timeZone: "Asia/Jakarta",
+    }).format(createdAt),
+  };
 }
 
 export function BackupSettings({ afterImport }: Props) {
@@ -294,6 +307,7 @@ export function BackupSettings({ afterImport }: Props) {
               <div className="divide-y divide-border/70">
                 {githubBackups.map((backup) => {
                   const restoring = restoringPath === backup.path;
+                  const timeInformation = backupTimeInformation(backup);
                   return (
                     <div
                       key={backup.sha || backup.path}
@@ -305,11 +319,20 @@ export function BackupSettings({ afterImport }: Props) {
                         </span>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold">
-                            {backupLabel(backup)}
+                            {timeInformation?.date ?? "Cadangan lama"}
                           </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {formatSize(backup.size)}
-                            {backup.legacy ? " · Format lama" : " · GitHub"}
+                          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+                            {timeInformation && (
+                              <>
+                                <Clock3 className="size-3.5" aria-hidden="true" />
+                                <span>Pukul {timeInformation.time}</span>
+                                <span aria-hidden="true">·</span>
+                              </>
+                            )}
+                            <span>
+                              {formatSize(backup.size)}
+                              {backup.legacy ? " · Format lama" : " · GitHub"}
+                            </span>
                           </p>
                         </div>
                       </div>
