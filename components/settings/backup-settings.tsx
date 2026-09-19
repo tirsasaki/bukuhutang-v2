@@ -231,7 +231,8 @@ export function BackupSettings({ afterImport }: Props) {
                     </Badge>
                   </div>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Riwayat tersimpan di tirsasaki/bukuhutang-backup.
+                    Tiga cadangan terbaru tersimpan di
+                    tirsasaki/bukuhutang-backup.
                   </p>
                 </div>
               </div>

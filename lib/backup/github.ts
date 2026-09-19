@@ -1,4 +1,5 @@
 const MAX_BACKUP_BYTES = 5_000_000;
+const MAX_GITHUB_BACKUPS = 3;
 const DEFAULT_REPOSITORY = "tirsasaki/bukuhutang-backup";
 
 type GitHubContent = {
@@ -145,6 +146,31 @@ export async function listGitHubBackups(
     .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
 }
 
+async function deleteGitHubBackup(backup: GitHubBackup) {
+  const config = configuration();
+  if (!config)
+    throw new GitHubBackupError(
+      "Cadangan GitHub belum dikonfigurasi di server.",
+      503,
+    );
+  await githubRequest(`contents/${encodePath(backup.path)}`, {
+    method: "DELETE",
+    body: JSON.stringify({
+      message: `Hapus cadangan lama Buku Piutang ${backup.name}`,
+      sha: backup.sha,
+      branch: config.branch,
+    }),
+  });
+}
+
+async function makeRoomForLatestBackup(userId: string) {
+  const backups = await listGitHubBackups(userId);
+  const expiredBackups = backups.slice(MAX_GITHUB_BACKUPS - 1);
+  for (const backup of expiredBackups) {
+    await deleteGitHubBackup(backup);
+  }
+}
+
 export async function uploadGitHubBackup(
   userId: string,
   backup: unknown,
@@ -165,6 +191,7 @@ export async function uploadGitHubBackup(
   const filename = `buku-piutang-${exportedAt.replaceAll(":", "-")}.json`;
   const path = `backups/${userId}/${filename}`;
   const raw = JSON.stringify(backup, null, 2);
+  await makeRoomForLatestBackup(userId);
   const response = await githubRequest(`contents/${encodePath(path)}`, {
     method: "PUT",
     body: JSON.stringify({
