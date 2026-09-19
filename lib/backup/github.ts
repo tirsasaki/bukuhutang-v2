@@ -99,7 +99,7 @@ async function listDirectory(path: string) {
 
 function createdAtFromName(name: string) {
   const match = name.match(
-    /^buku-piutang-(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z\.json$/,
+    /^buku-piutang-(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})[.-](\d{3})Z\.json$/,
   );
   if (!match) return null;
   return `${match[1]}T${match[2]}:${match[3]}:${match[4]}.${match[5]}Z`;
