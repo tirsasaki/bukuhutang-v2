@@ -103,7 +103,7 @@ export function buildShareMessages(
     .join("\n\n");
   const shownStoreName = options.storeName ? store.name : "";
   const shownCustomerName = options.customerName ? selected.name : "";
-  const customerGreeting = shownCustomerName ? ` Kak ${shownCustomerName}` : " Kak";
+  const customerGreeting = shownCustomerName ? ` ${shownCustomerName}` : "";
   const storeContext = shownStoreName ? ` di ${shownStoreName}` : "";
   const storeSignature = [
     shownStoreName,
