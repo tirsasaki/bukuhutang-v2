@@ -249,3 +249,9 @@ Folder `examples/d1` dan berkas `.openai/hosting.json` berasal dari dukungan hos
 - Seluruh tabel utama mengaktifkan RLS dan membatasi data berdasarkan `owner_id = auth.uid()`.
 - Token cadangan GitHub hanya dibaca oleh kode server dan sebaiknya dibatasi pada satu repositori privat.
 - Aplikasi tidak menyediakan pendaftaran publik. Kelola pengguna melalui dasbor Supabase atau alur administrasi terpisah.
+
+Cara melaporkan kerentanan dan aturan pengujian yang aman dijelaskan dalam [`SECURITY.md`](SECURITY.md). Jangan menuliskan rincian kerentanan atau rahasia pada issue publik.
+
+## Lisensi
+
+Proyek ini tersedia dengan [MIT License](LICENSE). Anda dapat menggunakan, menyalin, mengubah, menggabungkan, menerbitkan, mendistribusikan, mensublisensikan, atau menjual salinan perangkat lunak sesuai ketentuan lisensi tersebut.
