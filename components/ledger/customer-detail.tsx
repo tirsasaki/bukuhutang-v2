@@ -127,12 +127,11 @@ export function CustomerDetail({
                   Bagikan rincian
                 </Button>
                 <Button
-                  variant="outline"
-                  className="h-9 gap-1.5 rounded-lg border-primary/20 bg-secondary/40 px-3 text-xs! font-medium! text-primary shadow-none"
+                  className="h-9 gap-1.5 rounded-lg bg-emerald-700 px-3 text-xs! font-semibold! text-white shadow-sm hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
                   onClick={() => setDebtOpen(true)}
                 >
                   <Plus className="size-3.5" aria-hidden="true" />
-                  Tambah piutang
+                  Catat piutang
                 </Button>
                 <Button
                   className="col-span-2 h-9 gap-1.5 rounded-lg px-3 text-xs! font-semibold! shadow-sm"
