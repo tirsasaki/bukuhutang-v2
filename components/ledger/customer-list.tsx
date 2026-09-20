@@ -202,7 +202,7 @@ export function CustomerList({
                 setCustomerSort(event.target.value as typeof customerSort)
               }
               aria-label="Urutkan pelanggan"
-              className="h-7 w-full appearance-none rounded-md bg-transparent pr-6 pl-5 text-xs font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-7 w-full appearance-none rounded-md border border-transparent bg-transparent pr-6 pl-5 text-xs font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring dark:border-border/70 dark:bg-popover dark:text-popover-foreground dark:scheme-dark dark:[&>option]:bg-popover dark:[&>option]:text-popover-foreground"
             >
               <option value="latest">Aktivitas terbaru</option>
               <option value="oldest">Aktivitas terlama</option>
