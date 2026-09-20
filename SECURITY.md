@@ -1,80 +1,80 @@
-# Kebijakan Keamanan
+# Security Policy
 
-Keamanan data pelanggan, transaksi, sesi pengguna, dan cadangan merupakan bagian penting dari Buku Piutang. Dokumen ini menjelaskan versi yang didukung dan cara melaporkan dugaan kerentanan dengan aman.
+The security of customer data, transactions, user sessions, and backups is important to Buku Piutang. This document explains which versions are supported and how to report a suspected vulnerability safely.
 
-## Versi yang didukung
+## Supported Versions
 
-| Versi | Dukungan keamanan |
+| Version | Security Support |
 | --- | --- |
-| Cabang `main` terbaru | Didukung |
-| Penerapan produksi dari `main` terbaru | Didukung |
-| Cabang pengembangan, pratinjau lama, atau fork pihak lain | Tidak didukung |
+| Latest `main` branch | Supported |
+| Production deployment from the latest `main` branch | Supported |
+| Development branches, old previews, or third-party forks | Not supported |
 
-Proyek belum menerbitkan versi rilis bernomor. Perbaikan keamanan diberikan pada `main` terbaru.
+The project does not currently publish numbered releases. Security fixes are provided on the latest `main` branch.
 
-## Melaporkan kerentanan
+## Reporting a Vulnerability
 
-Jangan membuka issue publik yang berisi rincian kerentanan, data pelanggan, token, kata sandi, atau langkah eksploitasi.
+Do not open a public issue containing vulnerability details, customer data, tokens, passwords, or exploitation steps.
 
-Gunakan salah satu cara berikut:
+Use one of the following methods:
 
-1. Buka halaman [pelaporan kerentanan privat](https://github.com/tirsasaki/bukuhutang-v2/security/advisories/new) pada repositori ini dan buat laporan baru.
-2. Jika pelaporan privat belum tersedia, buat issue publik tanpa rincian sensitif dengan judul **Permintaan kanal pelaporan keamanan**. Pemelihara akan menyediakan kanal privat untuk melanjutkan laporan.
+1. Open the repository's [private vulnerability reporting page](https://github.com/tirsasaki/bukuhutang-v2/security/advisories/new) and submit a new report.
+2. If private vulnerability reporting is unavailable, open a public issue without sensitive details titled **Request for a private security reporting channel**. A maintainer will provide a private channel for the full report.
 
-Sertakan informasi berikut jika memungkinkan:
+Include the following information when possible:
 
-- Ringkasan masalah dan dampak yang diperkirakan.
-- Bagian aplikasi, jalur API, atau versi kode yang terdampak.
-- Langkah reproduksi yang minimal dan dapat diulang.
-- Bukti konsep yang tidak memakai data pengguna lain.
-- Saran perbaikan atau mitigasi, jika ada.
-- Cara aman untuk menghubungi pelapor selama proses penanganan.
+- A concise summary of the issue and its potential impact.
+- The affected application area, API route, or code version.
+- Minimal and repeatable reproduction steps.
+- A proof of concept that does not use another user's data.
+- A suggested fix or mitigation, if available.
+- A safe way to contact the reporter during remediation.
 
-## Waktu tanggapan
+## Response Targets
 
-Target penanganan laporan:
+The project aims to:
 
-- Konfirmasi penerimaan dalam tiga hari kerja.
-- Penilaian awal tingkat dampak dalam tujuh hari kerja.
-- Pembaruan berkala sampai perbaikan atau mitigasi tersedia.
+- Acknowledge a report within three business days.
+- Provide an initial impact assessment within seven business days.
+- Share periodic updates until a fix or mitigation is available.
 
-Waktu perbaikan bergantung pada tingkat dampak, kerumitan, dan kebutuhan koordinasi penerapan. Laporan yang valid akan diberi tahu sebelum rincian dipublikasikan.
+Remediation time depends on severity, complexity, and deployment coordination. Reporters of valid findings will be notified before vulnerability details are made public.
 
-## Ruang lingkup utama
+## Primary Scope
 
-Laporan berikut menjadi prioritas:
+The following reports are treated as a priority:
 
-- Akses tanpa izin atau pengambilalihan sesi pengguna.
-- Kebocoran data lintas akun akibat kegagalan RLS atau pemeriksaan `owner_id`.
-- Perubahan atau penghapusan pelanggan, piutang, pembayaran, kasir, atau pengaturan toko tanpa otorisasi.
-- Akses ke cadangan pengguna lain, manipulasi jalur cadangan, atau kebocoran token GitHub.
-- Injeksi, cross-site scripting (XSS), pemalsuan permintaan, atau eksekusi kode.
-- Kebocoran rahasia melalui log, respons API, berkas, atau hasil penerapan.
-- Penyalahgunaan proses impor yang dapat merusak integritas data.
+- Unauthorized access or user session takeover.
+- Cross-account data exposure caused by an RLS or `owner_id` authorization failure.
+- Unauthorized modification or deletion of customers, debts, payments, cashiers, or store settings.
+- Access to another user's backups, backup path manipulation, or GitHub token exposure.
+- Injection, cross-site scripting (XSS), request forgery, or code execution.
+- Secret exposure through logs, API responses, files, or deployments.
+- Import process abuse that can compromise data integrity.
 
-Temuan berikut biasanya tidak dianggap kerentanan tanpa bukti dampak nyata:
+The following findings are generally out of scope unless they demonstrate a concrete security impact:
 
-- Laporan otomatis tentang versi dependensi tanpa jalur eksploitasi pada aplikasi ini.
-- Masalah pada peramban yang sudah tidak didukung.
-- Saran penguatan konfigurasi tanpa risiko yang dapat dibuktikan.
-- Serangan yang membutuhkan akses penuh ke akun Supabase, GitHub, atau Vercel milik pemilik.
+- Automated dependency version reports without an application-specific exploitation path.
+- Problems that only affect unsupported browsers.
+- General hardening suggestions without a demonstrable risk.
+- Attacks that require full control of the owner's Supabase, GitHub, or Vercel account.
 
-## Aturan pengujian yang aman
+## Safe Testing Rules
 
-- Gunakan akun, data, dan lingkungan yang Anda miliki atau telah diizinkan untuk diuji.
-- Jangan mengakses, mengubah, mengunduh, atau menghapus data milik pengguna lain.
-- Jangan melakukan serangan penolakan layanan, pemindaian massal, rekayasa sosial, atau pengujian yang mengganggu layanan produksi.
-- Hentikan pengujian segera jika data pihak lain terlihat dan laporkan temuan tanpa menyimpan salinannya.
-- Batasi bukti konsep pada tindakan minimum yang diperlukan untuk menunjukkan masalah.
+- Test only accounts, data, and environments that you own or are authorized to assess.
+- Do not access, modify, download, or delete another user's data.
+- Do not perform denial-of-service attacks, mass scanning, social engineering, or testing that disrupts production service.
+- Stop testing immediately if another user's data becomes visible, and report the finding without retaining a copy.
+- Limit proofs of concept to the minimum action required to demonstrate the issue.
 
-## Jika rahasia terpapar
+## Exposed Secrets
 
-Jika token atau kunci rahasia ditemukan pada kode, log, atau penerapan:
+If a token or secret is found in source code, logs, or a deployment:
 
-1. Jangan menyalin atau menggunakannya di luar kebutuhan verifikasi minimum.
-2. Laporkan lokasi rahasia secara privat.
-3. Pemilik proyek harus segera mencabut dan mengganti rahasia tersebut.
-4. Periksa log akses Supabase, GitHub, dan Vercel untuk aktivitas yang tidak dikenal.
-5. Terapkan ulang aplikasi setelah variabel lingkungan diperbarui.
+1. Do not copy or use it beyond the minimum verification required.
+2. Report its location privately.
+3. The project owner should revoke and rotate the secret immediately.
+4. Review Supabase, GitHub, and Vercel access logs for unrecognized activity.
+5. Redeploy the application after updating its environment variables.
 
-Terima kasih telah membantu menjaga Buku Piutang dan data penggunanya tetap aman.
+Thank you for helping keep Buku Piutang and its users' data secure.
