@@ -128,9 +128,7 @@ export function LedgerPage({ initialData }: Props) {
       <Toaster richColors position="top-right" />
       <LedgerHeader
         storeName={data.store.name}
-        hasSelected={!!selected}
         openBalance={openBalance}
-        setDebtOpen={setDebtOpen}
       />
       <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)_minmax(280px,340px)]">
         <CustomerList

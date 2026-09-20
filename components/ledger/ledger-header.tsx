@@ -7,7 +7,6 @@ import {
   BookOpenText,
   CircleDollarSign,
   LogOut,
-  Plus,
   Settings2,
 } from "lucide-react";
 import Link from "next/link";
@@ -15,9 +14,7 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   storeName: string;
-  hasSelected: boolean;
   openBalance: number;
-  setDebtOpen: (open: boolean) => void;
 };
 
 function OpenBalanceSummary({ openBalance }: { openBalance: number }) {
@@ -45,9 +42,7 @@ function OpenBalanceSummary({ openBalance }: { openBalance: number }) {
 
 export function LedgerHeader({
   storeName,
-  hasSelected,
   openBalance,
-  setDebtOpen,
 }: Props) {
   const router = useRouter();
   async function signOut() {
@@ -84,23 +79,9 @@ export function LedgerHeader({
       </div>
 
       <nav
-        aria-label="Tindakan, pengaturan, dan akun"
+        aria-label="Pengaturan dan akun"
         className="col-start-2 row-start-1 flex shrink-0 items-center gap-1"
       >
-        <Button
-          type="button"
-          size="icon-sm"
-          className="rounded-lg shadow-none transition-colors duration-200 hover:bg-primary/90 hover:text-primary-foreground lg:h-9 lg:w-auto lg:px-3"
-          disabled={!hasSelected}
-          onClick={() => setDebtOpen(true)}
-          aria-label="Catat piutang"
-          title="Catat piutang"
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          <span className="hidden text-xs font-semibold lg:inline">
-            Catat piutang
-          </span>
-        </Button>
         <ThemeSwitch
           compact
           className="h-8 rounded-lg px-1 transition-colors duration-200 [&>svg]:hidden sm:px-1.5 sm:[&>svg]:block"
