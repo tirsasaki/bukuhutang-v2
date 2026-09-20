@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { retrySupabaseRequest } from "@/lib/supabase/retry";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -20,16 +21,19 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await retrySupabaseRequest(() => supabase.auth.getUser());
   const isLoginPage = request.nextUrl.pathname === "/login";
 
-  if (!user && !isLoginPage) {
+  if (!error && !user && !isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("lanjut", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
-  if (user && isLoginPage) {
+  if (!error && user && isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";

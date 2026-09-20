@@ -1,4 +1,5 @@
 import { requireApiUser } from "@/lib/supabase/server";
+import { isRetryableSupabaseError } from "@/lib/supabase/retry";
 import type { Debt, LedgerData, Payment } from "./types";
 
 type CustomerRow = {
@@ -24,6 +25,54 @@ function addToGroup<T>(groups: Map<string, T[]>, key: string, value: T) {
 
 export async function readLedgerData(): Promise<LedgerData> {
   const { supabase, user } = await requireApiUser();
+  const loadResults = () =>
+    Promise.all([
+      supabase
+        .from("customers")
+        .select("id,name,phone,created_at")
+        .eq("owner_id", user.id),
+      supabase
+        .from("debt_items")
+        .select(
+          "id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty,unit_price,wholesale_price,price_mode,invoice_id",
+        )
+        .eq("owner_id", user.id)
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("payments")
+        .select("id,debt_item_id,amount,paid_at,received_by,source")
+        .eq("owner_id", user.id)
+        .order("paid_at", { ascending: false }),
+      supabase
+        .from("credit_transactions")
+        .select("customer_id,amount,note,created_at")
+        .eq("owner_id", user.id),
+      supabase
+        .from("import_batches")
+        .select("row_count,imported_at")
+        .eq("owner_id", user.id),
+      supabase
+        .from("cashiers")
+        .select("id,name,phone,is_active")
+        .eq("owner_id", user.id)
+        .order("name"),
+      supabase
+        .from("store_settings")
+        .select("name,address")
+        .eq("owner_id", user.id)
+        .maybeSingle(),
+    ]);
+
+  let results = await loadResults();
+  let firstError = results.find((result) => result.error)?.error;
+
+  if (firstError && isRetryableSupabaseError(firstError)) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    results = await loadResults();
+    firstError = results.find((result) => result.error)?.error;
+  }
+
   const [
     customersResult,
     debtsResult,
@@ -32,52 +81,8 @@ export async function readLedgerData(): Promise<LedgerData> {
     importsResult,
     cashiersResult,
     storeResult,
-  ] = await Promise.all([
-    supabase
-      .from("customers")
-      .select("id,name,phone,created_at")
-      .eq("owner_id", user.id),
-    supabase
-      .from("debt_items")
-      .select(
-        "id,customer_id,amount,created_at,date,invoice_no,item,cashier,qty,unit_price,wholesale_price,price_mode,invoice_id",
-      )
-      .eq("owner_id", user.id)
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("payments")
-      .select("id,debt_item_id,amount,paid_at,received_by,source")
-      .eq("owner_id", user.id)
-      .order("paid_at", { ascending: false }),
-    supabase
-      .from("credit_transactions")
-      .select("customer_id,amount,note,created_at")
-      .eq("owner_id", user.id),
-    supabase
-      .from("import_batches")
-      .select("row_count,imported_at")
-      .eq("owner_id", user.id),
-    supabase
-      .from("cashiers")
-      .select("id,name,phone,is_active")
-      .eq("owner_id", user.id)
-      .order("name"),
-    supabase
-      .from("store_settings")
-      .select("name,address")
-      .eq("owner_id", user.id)
-      .maybeSingle(),
-  ]);
+  ] = results;
 
-  const firstError =
-    customersResult.error ??
-    debtsResult.error ??
-    paymentsResult.error ??
-    creditsResult.error ??
-    importsResult.error ??
-    cashiersResult.error ??
-    storeResult.error;
   if (firstError) throw firstError;
 
   const customers = (customersResult.data ?? []) as CustomerRow[];
