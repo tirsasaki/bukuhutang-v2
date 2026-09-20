@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -238,14 +239,14 @@ export default function StoreSettingsPage() {
       </header>
 
       <div className="mx-auto max-w-5xl p-4 lg:p-8">
-        <section className="mb-5 rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-secondary text-primary">
-              <Store className="size-5" />
+        <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-xs">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="grid size-9 place-items-center rounded-xl bg-secondary text-primary">
+              <Store className="size-4" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">Informasi toko</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="text-base font-bold">Informasi toko</h1>
+              <p className="text-xs leading-5 text-muted-foreground">
                 Nama dan alamat ini digunakan pada identitas serta struk
                 tagihan.
               </p>
@@ -260,32 +261,46 @@ export default function StoreSettingsPage() {
             <form
               key={store.updated_at ?? "new-store"}
               onSubmit={saveStore}
-              className="space-y-4"
+              className="max-w-3xl space-y-3"
             >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="storeName">Nama toko</Label>
-                  <Input
-                    id="storeName"
-                    name="name"
-                    defaultValue={store.name}
-                    maxLength={100}
-                    placeholder="Contoh: Toko Berkah"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="storeAddress">Alamat toko</Label>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="storeName" className="text-xs">
+                    Nama toko
+                  </Label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                    <textarea
+                    <Store
+                      className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <Input
+                      id="storeName"
+                      name="name"
+                      defaultValue={store.name}
+                      maxLength={100}
+                      placeholder="Contoh: Toko Berkah"
+                      className="pl-9"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="storeAddress" className="text-xs">
+                    Alamat toko
+                  </Label>
+                  <div className="relative">
+                    <MapPin
+                      className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <Textarea
                       id="storeAddress"
                       name="address"
                       defaultValue={store.address}
                       maxLength={500}
-                      rows={3}
+                      rows={2}
                       placeholder="Alamat lengkap toko"
-                      className="w-full resize-y rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                      className="min-h-16 resize-y pl-9"
                     />
                   </div>
                 </div>
