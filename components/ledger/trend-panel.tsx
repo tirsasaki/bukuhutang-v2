@@ -29,6 +29,12 @@ const compactNumber = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 1,
 });
 
+const rankColorClasses = [
+  "bg-amber-100 text-amber-900 ring-1 ring-inset ring-amber-300/70 dark:bg-amber-400/15 dark:text-amber-300 dark:ring-amber-300/25",
+  "bg-slate-200 text-slate-800 ring-1 ring-inset ring-slate-300 dark:bg-slate-300/15 dark:text-slate-200 dark:ring-slate-300/25",
+  "bg-orange-100 text-orange-900 ring-1 ring-inset ring-orange-300/70 dark:bg-orange-400/15 dark:text-orange-300 dark:ring-orange-300/25",
+];
+
 type Props = { data: LedgerData };
 
 export function TrendPanel({ data }: Props) {
@@ -219,7 +225,7 @@ export function TrendPanel({ data }: Props) {
                   className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2.5 px-3 py-2.5"
                 >
                   <span
-                    className={`grid size-7 place-items-center rounded-lg text-[11px] font-bold tabular-nums ${index === 0 ? "bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300" : "bg-muted text-muted-foreground"}`}
+                    className={`grid size-7 place-items-center rounded-lg text-[11px] font-bold tabular-nums ${rankColorClasses[index] ?? "bg-muted text-muted-foreground"}`}
                   >
                     {index + 1}
                   </span>
