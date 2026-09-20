@@ -8,6 +8,7 @@ import {
   Loader2,
   MapPin,
   PencilLine,
+  Phone,
   Plus,
   Save,
   Store,
@@ -344,14 +345,22 @@ export default function StoreSettingsPage() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <div className="flex items-center justify-between border-b border-border p-5">
-            <div>
-              <h1 className="text-lg font-bold">Informasi kasir</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Kasir aktif akan muncul saat mencatat piutang dan pembayaran.
-              </p>
+        <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
+          <div className="flex items-center justify-between gap-3 border-b border-border/70 p-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
+                <UsersRound className="size-4" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-base font-bold">Informasi kasir</h1>
+                <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                  Kasir aktif akan muncul saat mencatat piutang dan pembayaran.
+                </p>
+              </div>
             </div>
+            <Badge variant="outline" className="bg-background text-xs">
+              {loading ? "Memuat…" : `${cashiers.length} kasir`}
+            </Badge>
           </div>
           {loading ? (
             <div className="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
@@ -359,23 +368,34 @@ export default function StoreSettingsPage() {
             </div>
           ) : cashiers.length ? (
             <>
-              <div className="space-y-3 p-3 sm:hidden">
+              <div className="space-y-2.5 p-3 sm:hidden">
                 {cashiers.map((cashier) => (
                   <article
                     key={cashier.id}
-                    className="rounded-xl border border-border/70 bg-muted/20 p-3"
+                    className="rounded-xl border border-border/70 bg-background p-3 shadow-xs"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="break-words text-sm font-semibold">
-                          {cashier.name}
-                        </p>
-                        <p className="mt-1 break-all text-xs text-muted-foreground">
-                          {cashier.phone || "Nomor WhatsApp belum diisi"}
-                        </p>
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold text-primary">
+                          {cashier.name.trim().charAt(0).toUpperCase() || "K"}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="break-words text-sm font-semibold">
+                            {cashier.name}
+                          </p>
+                          <p className="mt-0.5 flex items-center gap-1.5 break-all text-xs text-muted-foreground">
+                            <Phone className="size-3.5 shrink-0" aria-hidden="true" />
+                            {cashier.phone || "WhatsApp belum diisi"}
+                          </p>
+                        </div>
                       </div>
                       <Badge
-                        variant={cashier.is_active ? "default" : "secondary"}
+                        variant="outline"
+                        className={
+                          cashier.is_active
+                            ? "border-emerald-300/70 bg-emerald-50 text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300"
+                            : "bg-muted text-muted-foreground"
+                        }
                       >
                         {cashier.is_active ? "Aktif" : "Nonaktif"}
                       </Badge>
@@ -392,7 +412,7 @@ export default function StoreSettingsPage() {
                         Status kasir
                       </label>
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         className="gap-1.5"
                         onClick={() => {
@@ -406,54 +426,81 @@ export default function StoreSettingsPage() {
                   </article>
                 ))}
               </div>
-              <Table className="hidden sm:table">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nama kasir</TableHead>
-                  <TableHead>Nomor WhatsApp</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Tindakan</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {cashiers.map((cashier) => (
-                  <TableRow key={cashier.id}>
-                    <TableCell className="font-semibold">
-                      {cashier.name}
-                    </TableCell>
-                    <TableCell>{cashier.phone || "Belum diisi"}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={cashier.is_active}
-                          onCheckedChange={(checked) =>
-                            void setActive(cashier, checked)
-                          }
-                          aria-label={`${cashier.is_active ? "Nonaktifkan" : "Aktifkan"} ${cashier.name}`}
-                        />
-                        <Badge
-                          variant={cashier.is_active ? "default" : "secondary"}
-                        >
-                          {cashier.is_active ? "Aktif" : "Nonaktif"}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => {
-                          setEditing(cashier);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        <PencilLine className="size-4" /> Ubah
-                      </Button>
-                    </TableCell>
+              <Table className="hidden table-fixed sm:table">
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-9 w-[32%] px-4 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Kasir
+                    </TableHead>
+                    <TableHead className="h-9 w-[30%] px-4 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Nomor WhatsApp
+                    </TableHead>
+                    <TableHead className="h-9 w-[24%] px-4 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Status
+                    </TableHead>
+                    <TableHead className="h-9 w-[14%] px-4 text-right text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Tindakan
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
+                </TableHeader>
+                <TableBody>
+                  {cashiers.map((cashier) => (
+                    <TableRow key={cashier.id} className="h-14">
+                      <TableCell className="px-4 py-2">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold text-primary">
+                            {cashier.name.trim().charAt(0).toUpperCase() || "K"}
+                          </span>
+                          <span className="truncate font-semibold">
+                            {cashier.name}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-2">
+                        <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                          <Phone className="size-3.5 shrink-0" aria-hidden="true" />
+                          <span className="truncate">
+                            {cashier.phone || "Belum diisi"}
+                          </span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={cashier.is_active}
+                            onCheckedChange={(checked) =>
+                              void setActive(cashier, checked)
+                            }
+                            aria-label={`${cashier.is_active ? "Nonaktifkan" : "Aktifkan"} ${cashier.name}`}
+                          />
+                          <Badge
+                            variant="outline"
+                            className={
+                              cashier.is_active
+                                ? "border-emerald-300/70 bg-emerald-50 text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300"
+                                : "bg-muted text-muted-foreground"
+                            }
+                          >
+                            {cashier.is_active ? "Aktif" : "Nonaktif"}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-2 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => {
+                            setEditing(cashier);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <PencilLine className="size-3.5" /> Ubah
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
               </Table>
             </>
           ) : (
