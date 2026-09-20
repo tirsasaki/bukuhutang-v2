@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { retrySupabaseRequest } from "./retry";
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -28,7 +29,11 @@ export async function createSupabaseServerClient() {
 
 export async function requireApiUser() {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error("UNAUTHORIZED");
+  const { data, error } = await retrySupabaseRequest(() =>
+    supabase.auth.getUser(),
+  );
+
+  if (error) throw error;
+  if (!data.user) throw new Error("UNAUTHORIZED");
   return { supabase, user: data.user };
 }

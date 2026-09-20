@@ -2,9 +2,21 @@ import { LedgerPage } from "@/components/ledger/ledger-page";
 import { readLedgerData } from "@/lib/ledger/read";
 import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+
+async function loadLedgerData() {
+  try {
+    return await readLedgerData();
+  } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      redirect("/login?lanjut=%2F");
+    }
+    throw error;
+  }
+}
 
 async function LedgerContent() {
-  const initialData = await readLedgerData();
+  const initialData = await loadLedgerData();
   return <LedgerPage initialData={initialData} />;
 }
 
