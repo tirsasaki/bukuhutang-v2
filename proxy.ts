@@ -26,14 +26,17 @@ export async function proxy(request: NextRequest) {
     error,
   } = await retrySupabaseRequest(() => supabase.auth.getUser());
   const isLoginPage = request.nextUrl.pathname === "/login";
+  
+  // Jika tidak ada user ATAU terjadi error auth, anggap tidak login
+  const isAuthenticated = !error && user;
 
-  if (!error && !user && !isLoginPage) {
+  if (!isAuthenticated && !isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("lanjut", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
-  if (!error && user && isLoginPage) {
+  if (isAuthenticated && isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";
