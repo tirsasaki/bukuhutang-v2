@@ -33,7 +33,6 @@ export async function requireApiUser() {
     supabase.auth.getUser(),
   );
 
-  if (error) throw error;
-  if (!data.user) throw new Error("UNAUTHORIZED");
+  if (error || !data.user) throw new Error("UNAUTHORIZED");
   return { supabase, user: data.user };
 }
