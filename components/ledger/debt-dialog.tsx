@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -259,20 +260,17 @@ export function DebtDialog({
                       <Label className="lg:sr-only" htmlFor={`qty-${row.id}`}>
                         Jumlah
                       </Label>
-                      <Input
+                      <FormattedNumberInput
                         id={`qty-${row.id}`}
                         value={row.qty}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updatePricing(
                             row.id,
-                            { qty: event.target.value },
+                            { qty: value },
                             "base",
                           )
                         }
-                        type="number"
-                        min="1"
-                        step="1"
-                        inputMode="numeric"
+                        min={1}
                         required
                       />
                     </div>
@@ -280,20 +278,17 @@ export function DebtDialog({
                       <Label className="lg:sr-only" htmlFor={`unit-${row.id}`}>
                         Harga eceran (Rp)
                       </Label>
-                      <Input
+                      <FormattedNumberInput
                         id={`unit-${row.id}`}
                         value={row.unitPrice}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updatePricing(
                             row.id,
-                            { unitPrice: event.target.value },
+                            { unitPrice: value },
                             "base",
                           )
                         }
-                        type="number"
-                        min="1"
-                        step="1"
-                        inputMode="numeric"
+                        min={1}
                         placeholder="Rp"
                         required
                       />
@@ -328,21 +323,18 @@ export function DebtDialog({
                       >
                         Total harga grosir (Rp)
                       </Label>
-                      <Input
+                      <FormattedNumberInput
                         id={`wholesale-total-${row.id}`}
                         value={row.wholesaleTotal}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updatePricing(
                             row.id,
-                            { wholesaleTotal: event.target.value },
+                            { wholesaleTotal: value },
                             "wholesaleTotal",
                           )
                         }
-                        type="number"
-                        min="1"
+                        min={1}
                         max={grossAmount > 0 ? grossAmount : undefined}
-                        step="1"
-                        inputMode="numeric"
                         placeholder={
                           row.priceMode === "wholesale"
                             ? "Wajib diisi"
@@ -359,21 +351,18 @@ export function DebtDialog({
                       >
                         Diskon (Rp)
                       </Label>
-                      <Input
+                      <FormattedNumberInput
                         id={`discount-${row.id}`}
                         value={row.discount}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           updatePricing(
                             row.id,
-                            { discount: event.target.value },
+                            { discount: value },
                             "discount",
                           )
                         }
-                        type="number"
-                        min="0"
+                        min={0}
                         max={grossAmount > 0 ? grossAmount - 1 : undefined}
-                        step="1"
-                        inputMode="numeric"
                         placeholder="Rp 0"
                         disabled={row.priceMode !== "wholesale"}
                       />
