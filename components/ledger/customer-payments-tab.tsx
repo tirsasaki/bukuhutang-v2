@@ -3,6 +3,7 @@ import { useId, useState } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -98,15 +99,15 @@ export function CustomerPaymentsTab({
           </label>
           <label className="min-w-0 space-y-1.5 text-xs font-medium">
             <span>Nominal minimum (Rp)</span>
-            <Input type="number" min="0" step="any" inputMode="decimal" placeholder="Tanpa batas"
-              value={minAmount} onChange={(event) => setMinAmount(event.target.value)}
+            <FormattedNumberInput min={0} placeholder="Tanpa batas"
+              value={minAmount} onValueChange={setMinAmount}
               aria-invalid={amountError} aria-describedby={amountError ? `${filterId}-error` : undefined}
               className="text-xs!" />
           </label>
           <label className="min-w-0 space-y-1.5 text-xs font-medium">
             <span>Nominal maksimum (Rp)</span>
-            <Input type="number" min="0" step="any" inputMode="decimal" placeholder="Tanpa batas"
-              value={maxAmount} onChange={(event) => setMaxAmount(event.target.value)}
+            <FormattedNumberInput min={0} placeholder="Tanpa batas"
+              value={maxAmount} onValueChange={setMaxAmount}
               aria-invalid={amountError} aria-describedby={amountError ? `${filterId}-error` : undefined}
               className="text-xs!" />
           </label>

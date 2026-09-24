@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -174,17 +174,15 @@ export function PaymentDialog({
                 {useCredit && (
                   <div className="mt-3 space-y-2">
                     <Label htmlFor="creditAmount">Saldo yang digunakan</Label>
-                    <Input
+                    <FormattedNumberInput
                       id="creditAmount"
-                      type="number"
-                      min="0"
+                      min={0}
                       max={Math.min(
                         selected?.credit_balance ?? 0,
                         selected?.balance ?? 0,
                       )}
                       value={paymentCreditAmount}
-                      onChange={(event) => {
-                        const value = event.target.value;
+                      onValueChange={(value) => {
                         setPaymentCreditAmount(value);
                         if (paymentMode === "all")
                           setPaymentCashAmount(
@@ -196,7 +194,6 @@ export function PaymentDialog({
                             ),
                           );
                       }}
-                      inputMode="numeric"
                     />
                   </div>
                 )}
@@ -206,11 +203,10 @@ export function PaymentDialog({
               <Label htmlFor="paymentAmount">
                 {paymentMode === "all" ? "Uang diterima" : "Pembayaran tunai"}
               </Label>
-              <Input
+              <FormattedNumberInput
                 id="paymentAmount"
                 name="amount"
-                type="number"
-                min="0"
+                min={0}
                 max={
                   paymentMode === "partial"
                     ? Math.max(
@@ -221,10 +217,9 @@ export function PaymentDialog({
                     : undefined
                 }
                 value={paymentCashAmount}
-                onChange={(event) => setPaymentCashAmount(event.target.value)}
+                onValueChange={setPaymentCashAmount}
                 required
                 autoFocus
-                inputMode="numeric"
               />
               {paymentMode === "partial" ? (
                 oldestOpenDebt && (
