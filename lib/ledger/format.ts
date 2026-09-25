@@ -7,6 +7,7 @@ export const rupiah = new Intl.NumberFormat("id-ID", {
 export const receiptNumber = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 0,
 });
+export const RECEIPT_WIDTH = 28;
 export const shortDate = new Intl.DateTimeFormat("id-ID", {
   day: "numeric",
   month: "short",
@@ -62,7 +63,10 @@ export function receiptDate(value: string) {
   const [year, month, day] = value.slice(0, 10).split("-");
   return year && month && day ? `${day}/${month}/${year.slice(-2)}` : value;
 }
-export function receiptRow(left: string, right: string, width = 34) {
+export function receiptDivider(character: "=" | "-") {
+  return character.repeat(RECEIPT_WIDTH);
+}
+export function receiptRow(left: string, right: string, width = RECEIPT_WIDTH) {
   return `${left}${" ".repeat(Math.max(1, width - left.length - right.length))}${right}`;
 }
 export function whatsappNumber(value: string) {
