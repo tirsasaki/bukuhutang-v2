@@ -1,6 +1,7 @@
 import {
   debtPricing,
   receiptDate,
+  receiptDivider,
   receiptNumber,
   receiptRow,
   rupiah,
@@ -113,22 +114,22 @@ export function buildShareMessages(
     .join("\n");
   const receipt = [
     "STRUK TAGIHAN",
-    "==================================",
+    receiptDivider("="),
     ...(shownStoreName ? [shownStoreName.toUpperCase()] : []),
     ...(options.storeAddress && store.address
       ? [store.address.toUpperCase()]
       : []),
     ...(shownStoreName || (options.storeAddress && store.address)
-      ? ["----------------------------------"]
+      ? [receiptDivider("-")]
       : []),
     ...(shownCustomerName
       ? [
           `NAMA : ${shownCustomerName.toUpperCase()}`,
-          "----------------------------------",
+          receiptDivider("-"),
         ]
       : []),
     receiptSections || "TIDAK ADA PIUTANG TERBUKA",
-    "----------------------------------",
+    receiptDivider("-"),
     receiptRow("TOTAL SISA", `Rp ${receiptNumber.format(selected.balance)}`),
     `STATUS: ${selected.balance > 0 ? "BELUM LUNAS" : "LUNAS"}`,
     ...(selected.credit_balance > 0
@@ -139,7 +140,7 @@ export function buildShareMessages(
           ),
         ]
       : []),
-    "==================================",
+    receiptDivider("="),
   ].join("\n");
   return {
     formal: `Halo${customerGreeting} 👋\n\nBerikut rincian piutangnya${storeContext}:\n\n${informativeSections || "Tidak ada piutang terbuka."}\n\nTotal sisa piutang: ${rupiah.format(selected.balance)}.${creditNote}\n\nBisa dibayarkan saat sudah memungkinkan, ya. Kalau ada rincian yang ingin ditanyakan, silakan kabari kami. Terima kasih 🙏${storeSignature ? `\n\n${storeSignature}` : ""}`,
