@@ -1,6 +1,12 @@
 import { requireApiUser } from "@/lib/supabase/server";
-import { isRetryableSupabaseError } from "@/lib/supabase/retry";
-import type { Debt, LedgerData, Payment } from "./types";
+import { retrySupabaseRequest } from "@/lib/supabase/retry";
+import type {
+  Cashier,
+  Debt,
+  LedgerData,
+  Payment,
+  StoreInformation,
+} from "./types";
 
 type CustomerRow = {
   id: string;
@@ -16,6 +22,56 @@ type CreditRow = {
   note: string;
   created_at: string;
 };
+type ImportRow = { row_count: number; imported_at: string };
+
+const pageSize = 1000;
+
+function readErrorField(error: unknown, field: string) {
+  if (!error || typeof error !== "object" || !(field in error)) return undefined;
+  return error[field as keyof typeof error];
+}
+
+function throwTableError(table: string, cause: unknown): never {
+  const message = String(
+    readErrorField(cause, "message") ?? "Kesalahan tidak dikenal",
+  );
+  const code = String(readErrorField(cause, "code") ?? "UNKNOWN");
+
+  console.error(`Gagal membaca tabel Supabase: ${table}`, {
+    code,
+    message,
+    error: cause,
+  });
+  throw new Error(`Supabase: ${message} (${code})`, { cause });
+}
+
+async function loadData<T>(
+  table: string,
+  request: () => PromiseLike<{ data: unknown; error: unknown }>,
+): Promise<T | null> {
+  const result = await retrySupabaseRequest(request);
+  if (result.error) throwTableError(table, result.error);
+  return result.data as T | null;
+}
+
+async function loadPagedRows<T>(
+  table: string,
+  requestPage: (
+    from: number,
+    to: number,
+  ) => PromiseLike<{ data: unknown; error: unknown }>,
+) {
+  const rows: T[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const page =
+      (await loadData<T[]>(table, () =>
+        requestPage(from, from + pageSize - 1),
+      )) ?? [];
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
+}
 
 function addToGroup<T>(groups: Map<string, T[]>, key: string, value: T) {
   const group = groups.get(key);
@@ -25,12 +81,22 @@ function addToGroup<T>(groups: Map<string, T[]>, key: string, value: T) {
 
 export async function readLedgerData(): Promise<LedgerData> {
   const { supabase, user } = await requireApiUser();
-  const loadResults = () =>
-    Promise.all([
+  const [
+    customers,
+    debts,
+    payments,
+    credits,
+    imports,
+    cashiers,
+    store,
+  ] = await Promise.all([
+    loadData<CustomerRow[]>("customers", () =>
       supabase
         .from("customers")
         .select("id,name,phone,created_at")
         .eq("owner_id", user.id),
+    ).then((rows) => rows ?? []),
+    loadPagedRows<DebtRow>("debt_items", (from, to) =>
       supabase
         .from("debt_items")
         .select(
@@ -38,57 +104,46 @@ export async function readLedgerData(): Promise<LedgerData> {
         )
         .eq("owner_id", user.id)
         .order("date", { ascending: false })
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .range(from, to),
+    ),
+    loadPagedRows<PaymentRow>("payments", (from, to) =>
       supabase
         .from("payments")
         .select("id,debt_item_id,amount,paid_at,received_by,source")
         .eq("owner_id", user.id)
-        .order("paid_at", { ascending: false }),
+        .order("paid_at", { ascending: false })
+        .range(from, to),
+    ),
+    loadPagedRows<CreditRow>("credit_transactions", (from, to) =>
       supabase
         .from("credit_transactions")
         .select("customer_id,amount,note,created_at")
-        .eq("owner_id", user.id),
+        .eq("owner_id", user.id)
+        .range(from, to),
+    ),
+    loadData<ImportRow[]>("import_batches", () =>
       supabase
         .from("import_batches")
         .select("row_count,imported_at")
         .eq("owner_id", user.id),
+    ).then((rows) => rows ?? []),
+    loadData<Cashier[]>("cashiers", () =>
       supabase
         .from("cashiers")
         .select("id,name,phone,is_active")
         .eq("owner_id", user.id)
         .order("name"),
+    ).then((rows) => rows ?? []),
+    loadData<StoreInformation>("store_settings", () =>
       supabase
         .from("store_settings")
         .select("name,address")
         .eq("owner_id", user.id)
         .maybeSingle(),
-    ]);
+    ),
+  ]);
 
-  let results = await loadResults();
-  let firstError = results.find((result) => result.error)?.error;
-
-  if (firstError && isRetryableSupabaseError(firstError)) {
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    results = await loadResults();
-    firstError = results.find((result) => result.error)?.error;
-  }
-
-  const [
-    customersResult,
-    debtsResult,
-    paymentsResult,
-    creditsResult,
-    importsResult,
-    cashiersResult,
-    storeResult,
-  ] = results;
-
-  if (firstError) throw firstError;
-
-  const customers = (customersResult.data ?? []) as CustomerRow[];
-  const debts = (debtsResult.data ?? []) as DebtRow[];
-  const payments = (paymentsResult.data ?? []) as PaymentRow[];
-  const credits = (creditsResult.data ?? []) as CreditRow[];
   const debtById = new Map(debts.map((debt) => [debt.id, debt]));
   const paidByDebt = new Map<string, number>();
 
@@ -193,13 +248,12 @@ export async function readLedgerData(): Promise<LedgerData> {
     })
     .sort((a, b) => b.last_activity_at.localeCompare(a.last_activity_at));
 
-  const imports = importsResult.data ?? [];
   return {
     customers: customerRows,
     debts: debtRows,
     payments: paymentRows,
-    cashiers: cashiersResult.data ?? [],
-    store: storeResult.data ?? { name: "Toko Anda", address: "" },
+    cashiers,
+    store: store ?? { name: "Toko Anda", address: "" },
     importSummary: {
       import_count: imports.length,
       row_count: imports.reduce(

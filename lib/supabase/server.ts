@@ -1,6 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { retrySupabaseRequest } from "./retry";
+import {
+  isRetryableSupabaseError,
+  isUnauthenticatedSupabaseError,
+  retrySupabaseRequest,
+} from "./retry";
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -29,10 +33,36 @@ export async function createSupabaseServerClient() {
 
 export async function requireApiUser() {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await retrySupabaseRequest(() =>
-    supabase.auth.getUser(),
-  );
+  let authResult;
 
-  if (error || !data.user) throw new Error("UNAUTHORIZED");
+  try {
+    authResult = await retrySupabaseRequest(() => supabase.auth.getUser());
+  } catch (cause) {
+    const message =
+      cause instanceof Error
+        ? cause.message
+        : "Kesalahan autentikasi tidak dikenal";
+    throw new Error(
+      `Layanan autentikasi Supabase sementara tidak tersedia: ${message}`,
+      { cause },
+    );
+  }
+
+  const { data, error } = authResult;
+
+  if (!error && !data.user) throw new Error("UNAUTHORIZED");
+  if (error && isUnauthenticatedSupabaseError(error)) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Kesalahan autentikasi tidak dikenal";
+    const prefix = isRetryableSupabaseError(error)
+      ? "Layanan autentikasi Supabase sementara tidak tersedia"
+      : "Sesi Supabase tidak dapat diverifikasi";
+    throw new Error(`${prefix}: ${message}`, { cause: error });
+  }
   return { supabase, user: data.user };
 }
