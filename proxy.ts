@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { retrySupabaseRequest } from "@/lib/supabase/retry";
+import {
+  isUnauthenticatedSupabaseError,
+  retrySupabaseRequest,
+} from "@/lib/supabase/retry";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -21,16 +24,20 @@ export async function proxy(request: NextRequest) {
     },
   );
 
+  const authResult = await retrySupabaseRequest(() =>
+    supabase.auth.getUser(),
+  ).catch((error: unknown) => ({ data: { user: null }, error }));
   const {
     data: { user },
     error,
-  } = await retrySupabaseRequest(() => supabase.auth.getUser());
+  } = authResult;
   const isLoginPage = request.nextUrl.pathname === "/login";
-  
-  // Jika tidak ada user ATAU terjadi error auth, anggap tidak login
-  const isAuthenticated = !error && user;
+  const sessionMissing =
+    (!error && !user) ||
+    (Boolean(error) && isUnauthenticatedSupabaseError(error));
+  const isAuthenticated = !error && Boolean(user);
 
-  if (!isAuthenticated && !isLoginPage) {
+  if (sessionMissing && !isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("lanjut", request.nextUrl.pathname);

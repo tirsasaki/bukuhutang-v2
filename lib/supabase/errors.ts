@@ -1,10 +1,12 @@
 export function isMissingDatabaseSchema(error: unknown): boolean {
-  return Boolean(
-    error &&
-    typeof error === "object" &&
-    "code" in error &&
-    error.code === "PGRST205",
-  );
+  let current = error;
+
+  while (current && typeof current === "object") {
+    if ("code" in current && current.code === "PGRST205") return true;
+    current = "cause" in current ? current.cause : undefined;
+  }
+
+  return false;
 }
 
 export const databaseSetupMessage =

@@ -1,7 +1,8 @@
 "use client";
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 
 export default function ErrorPage({
@@ -11,15 +12,18 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const [retrying, setRetrying] = useState(false);
+  const router = useRouter();
+  const [retrying, startTransition] = useTransition();
 
   useEffect(() => {
     console.error("Gagal membuka buku piutang", error);
   }, [error]);
 
   function retry() {
-    setRetrying(true);
-    reset();
+    startTransition(() => {
+      router.refresh();
+      reset();
+    });
   }
 
   return (
