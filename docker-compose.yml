@@ -1,0 +1,38 @@
+# Buku Piutang (bukuhutang-v2) — jalankan dengan Docker Compose.
+#
+# 1. Salin .env.example ke .env, lalu isi nilainya. Token GitHub
+#    boleh dikosongkan: fitur cadangan GitHub saja yang tidak jalan.
+# 2. Build + jalan:
+#      docker compose up -d --build
+#
+# Variabel khusus deploy (opsional, isi di .env atau di shell):
+#   HOST_IP   — IP tempat port di-bind. Default 127.0.0.1 (hanya lokal).
+#               Untuk akses khusus Tailscale, isi dengan IP Tailscale
+#               host, mis. 100.125.60.100, dan JANGAN bind 0.0.0.0
+#               kalau aplikasinya tidak boleh publik.
+#   HOST_PORT — port host. Default 3000. Isi 80 kalau mau diakses
+#               tanpa nomor port lewat nama host yang mengarah ke
+#               IP Tailscale tersebut.
+#
+# NEXT_PUBLIC_* diteruskan sebagai build-arg (lihat Dockerfile):
+# nilainya dibakar ke bundle saat build, jadi ubah nilai itu =
+# build ulang (docker compose up -d --build).
+
+services:
+  buku-piutang:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    image: buku-piutang:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Pastikan nilai runtime ikut terbaca meski juga ada di .env.
+      GITHUB_BACKUP_TOKEN: ${GITHUB_BACKUP_TOKEN:-}
+      GITHUB_BACKUP_REPOSITORY: ${GITHUB_BACKUP_REPOSITORY:-tirsasaki/bukuhutang-backup}
+      GITHUB_BACKUP_BRANCH: ${GITHUB_BACKUP_BRANCH:-main}
+    ports:
+      - "${HOST_IP:-127.0.0.1}:${HOST_PORT:-3000}:3000"
