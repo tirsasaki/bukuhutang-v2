@@ -51,7 +51,21 @@ export function ShareDialog({
   const shareMessage = shareMessages[shareStyle];
   async function copyDebtDetails() {
     try {
-      await navigator.clipboard.writeText(shareMessage);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareMessage);
+      } else {
+        // Cadangan untuk HTTP biasa: Clipboard API hanya ada di konteks aman.
+        const area = document.createElement("textarea");
+        area.value = shareMessage;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        const copied = document.execCommand("copy");
+        document.body.removeChild(area);
+        if (!copied) throw new Error("copy failed");
+      }
       toast.success("Rincian piutang berhasil disalin.");
     } catch {
       toast.error(
