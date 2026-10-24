@@ -91,6 +91,32 @@ Semua operasi data dilakukan dalam konteks pengguna yang sedang masuk. Tabel mem
 
 8. Buka [http://localhost:3000](http://localhost:3000), lalu masuk menggunakan akun Supabase yang telah dibuat.
 
+## Menjalankan dengan Docker
+
+1. Salin contoh variabel lingkungan.
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Isi URL dan anon key Supabase di `.env`. Token GitHub boleh
+   dikosongkan; hanya fitur cadangan GitHub yang tidak jalan.
+
+3. Build dan jalankan.
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+4. Buka [http://localhost:3000](http://localhost:3000), lalu masuk
+   menggunakan akun Supabase yang telah dibuat.
+
+Perhatian: `NEXT_PUBLIC_*` dibakar ke bundle saat build, jadi kalau
+nilainya diubah, build ulang dengan `docker compose up -d --build`.
+Untuk deploy yang tidak boleh publik (mis. khusus Tailscale), atur
+`HOST_IP` ke IP Tailscale host dan jangan bind `0.0.0.0`; lihat
+komentar di [`docker-compose.yml`](docker-compose.yml).
+
 ## Variabel lingkungan
 
 | Nama | Wajib | Keterangan |
