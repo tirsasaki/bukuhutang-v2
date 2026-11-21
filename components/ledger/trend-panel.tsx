@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { BarChart3, ReceiptText, TrendingUp, UserRound } from "lucide-react";
+import { ReceiptText, TrendingUp, UsersRound, WalletCards } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -30,14 +30,18 @@ const compactNumber = new Intl.NumberFormat("id-ID", {
 });
 
 const rankColorClasses = [
-  "bg-amber-100 text-amber-900 ring-1 ring-inset ring-amber-300/70 dark:bg-amber-400/15 dark:text-amber-300 dark:ring-amber-300/25",
-  "bg-slate-200 text-slate-800 ring-1 ring-inset ring-slate-300 dark:bg-slate-300/15 dark:text-slate-200 dark:ring-slate-300/25",
-  "bg-orange-100 text-orange-900 ring-1 ring-inset ring-orange-300/70 dark:bg-orange-400/15 dark:text-orange-300 dark:ring-orange-300/25",
+  "border border-warning-border bg-warning-bg text-warning-fg",
+  "border border-border bg-muted text-foreground",
+  "border border-bronze-border bg-bronze-bg text-bronze-fg",
 ];
 
-type Props = { data: LedgerData };
+type Props = {
+  data: LedgerData;
+  selectedId: string;
+  onSelectCustomer: (id: string) => void;
+};
 
-export function TrendPanel({ data }: Props) {
+export function TrendPanel({ data, selectedId, onSelectCustomer }: Props) {
   const trend = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -71,9 +75,10 @@ export function TrendPanel({ data }: Props) {
       .sort(
         (a, b) =>
           b.debt_count - a.debt_count ||
+          b.balance - a.balance ||
           a.name.localeCompare(b.name, "id"),
       )
-      .slice(0, 8);
+      .slice(0, 6);
     const monthLabel = new Intl.DateTimeFormat("id-ID", {
       month: "long",
       year: "numeric",
@@ -87,56 +92,62 @@ export function TrendPanel({ data }: Props) {
     .map(String);
 
   return (
-    <aside className="hidden min-w-0 flex-col overflow-y-auto border-l border-border bg-muted/20 lg:flex">
-      <div className="border-b border-border/80 bg-background p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold tracking-tight">Grafik tren</h2>
-            <p className="mt-0.5 text-xs capitalize text-muted-foreground">
-              {trend.monthLabel}
-            </p>
-          </div>
-          <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
-            <TrendingUp className="size-4" aria-hidden="true" />
-          </div>
+    <aside className="hidden min-h-0 min-w-0 flex-col overflow-y-auto border-l border-border bg-muted desk:flex">
+      <div className="flex items-center justify-between border-b border-border-soft bg-card p-4">
+        <div>
+          <h2 className="text-[15px] font-extrabold tracking-tight">
+            Grafik tren
+          </h2>
+          <p className="text-[11.5px] text-muted-foreground capitalize">
+            {trend.monthLabel}
+          </p>
+        </div>
+        <div className="grid size-[38px] shrink-0 place-items-center rounded-[11px] bg-secondary text-primary">
+          <TrendingUp className="size-4" aria-hidden="true" />
         </div>
       </div>
 
-      <div className="space-y-3 p-3">
-        <div className="rounded-2xl border border-border/80 bg-card p-3 shadow-xs">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-semibold">Aktivitas harian</p>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+      <div className="flex flex-col gap-3 p-3.5">
+        <div className="rounded-2xl border border-border bg-card p-3.5 shadow-xs">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-bold">Aktivitas harian</p>
+            <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <span className="size-2 rounded-full bg-chart-1" /> Piutang
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="size-2 rounded-full bg-chart-2" /> Pembayaran
+                <span className="size-2 rounded-full bg-chart-2" /> Bayar
               </span>
             </div>
           </div>
           <ChartContainer
             config={chartConfig}
-            initialDimension={{ width: 280, height: 176 }}
-            className="mt-3 h-44 w-full aspect-auto"
+            initialDimension={{ width: 270, height: 148 }}
+            className="aspect-auto h-[148px] w-full"
           >
             <LineChart
               accessibilityLayer
               data={trend.daily}
-              margin={{ top: 4, right: 6, bottom: 0, left: 0 }}
+              margin={{ top: 6, right: 6, bottom: 0, left: 0 }}
             >
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <CartesianGrid
+                vertical={false}
+                strokeDasharray="3 3"
+                stroke="var(--border-soft)"
+              />
               <XAxis
                 dataKey="day"
                 ticks={ticks}
                 tickLine={false}
                 axisLine={false}
-                tickMargin={8}
+                tickMargin={6}
+                tick={{ fontSize: 9.5, fill: "var(--subtle-foreground)" }}
               />
               <YAxis
-                width={42}
+                width={34}
                 tickLine={false}
                 axisLine={false}
+                tick={{ fontSize: 9.5, fill: "var(--subtle-foreground)" }}
                 tickFormatter={(value) => compactNumber.format(Number(value))}
               />
               <ChartTooltip
@@ -163,83 +174,91 @@ export function TrendPanel({ data }: Props) {
                 type="monotone"
                 dataKey="debt"
                 stroke="var(--color-debt)"
-                strokeWidth={2}
+                strokeWidth={2.4}
+                strokeLinecap="round"
                 dot={false}
-                activeDot={{ r: 4 }}
+                activeDot={{ r: 4, fill: "var(--card)", strokeWidth: 2 }}
               />
               <Line
                 type="monotone"
                 dataKey="payment"
                 stroke="var(--color-payment)"
-                strokeWidth={2}
+                strokeWidth={2.4}
+                strokeLinecap="round"
                 dot={false}
-                activeDot={{ r: 4 }}
+                activeDot={{ r: 4, fill: "var(--card)", strokeWidth: 2 }}
               />
             </LineChart>
           </ChartContainer>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-border/80 bg-card p-3 shadow-xs">
-            <ReceiptText className="size-4 text-primary" aria-hidden="true" />
-            <p className="mt-2 text-[10px] text-muted-foreground">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-[14px] border border-border bg-card p-[13px]">
+            <ReceiptText className="size-[15px] text-primary" aria-hidden="true" />
+            <p className="mt-2 text-[11px] text-muted-foreground">
               Piutang bulan ini
             </p>
-            <p className="mt-1 break-words text-sm font-bold tabular-nums">
+            <p className="mt-[3px] text-sm font-extrabold break-words tabular-nums">
               {rupiah.format(trend.totalDebt)}
             </p>
           </div>
-          <div className="rounded-xl border border-border/80 bg-card p-3 shadow-xs">
-            <BarChart3
-              className="size-4 text-emerald-800 dark:text-emerald-300"
-              aria-hidden="true"
-            />
-            <p className="mt-2 text-[10px] text-muted-foreground">
-              Pembayaran bulan ini
+          <div className="rounded-[14px] border border-border bg-card p-[13px]">
+            <WalletCards className="size-3.5 text-success-fg" aria-hidden="true" />
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Pembayaran masuk
             </p>
-            <p className="mt-1 break-words text-sm font-bold tabular-nums text-emerald-900 dark:text-emerald-300">
+            <p className="mt-[3px] text-sm font-extrabold break-words text-success-fg tabular-nums">
               {rupiah.format(trend.totalPayment)}
             </p>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs">
-          <div className="flex items-center gap-3 border-b border-border/70 p-3">
-            <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
-              <UserRound className="size-4" aria-hidden="true" />
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
+          <div className="flex items-center gap-2.5 px-3.5 py-[13px]">
+            <div className="grid size-[34px] shrink-0 place-items-center rounded-[11px] bg-secondary text-primary">
+              <UsersRound className="size-4" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <p className="text-[10px] font-bold tracking-[0.08em] text-subtle-foreground uppercase">
                 Peringkat piutang
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                8 pelanggan dengan catatan piutang terbanyak
+              <p className="text-[11.5px] text-muted-foreground">
+                Pelanggan dengan catatan terbanyak
               </p>
             </div>
           </div>
           {trend.rankedCustomers.length ? (
-            <ol className="divide-y divide-border/60">
+            <ol>
               {trend.rankedCustomers.map((customer, index) => (
-                <li
-                  key={customer.id}
-                  className="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2.5 px-3 py-2.5"
-                >
-                  <span
-                    className={`grid size-7 place-items-center rounded-lg text-[11px] font-bold tabular-nums ${rankColorClasses[index] ?? "bg-muted text-muted-foreground"}`}
+                <li key={customer.id} className="border-t border-border-soft">
+                  <button
+                    type="button"
+                    onClick={() => onSelectCustomer(customer.id)}
+                    aria-current={selectedId === customer.id ? "true" : undefined}
+                    className={`grid w-full grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-2.5 px-3.5 py-[9px] text-left transition-colors hover:bg-card-hover focus-visible:bg-card-hover focus-visible:outline-none ${selectedId === customer.id ? "bg-secondary/60" : ""}`}
                   >
-                    {index + 1}
-                  </span>
-                  <span className="truncate text-xs font-semibold">
-                    {customer.name}
-                  </span>
-                  <span className="whitespace-nowrap text-[11px] font-medium tabular-nums text-muted-foreground">
-                    {customer.debt_count} piutang
-                  </span>
+                    <span
+                      className={`grid size-[26px] place-items-center rounded-lg text-[11px] font-extrabold tabular-nums ${rankColorClasses[index] ?? "bg-background text-muted-foreground"}`}
+                    >
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[12.5px] font-bold">
+                        {customer.name}
+                      </span>
+                      <span className="block text-[10.5px] text-muted-foreground tabular-nums">
+                        {rupiah.format(customer.balance)}
+                      </span>
+                    </span>
+                    <span className="text-[11px] font-semibold whitespace-nowrap text-muted-foreground tabular-nums">
+                      {customer.debt_count} nota
+                    </span>
+                  </button>
                 </li>
               ))}
             </ol>
           ) : (
-            <p className="p-4 text-center text-xs text-muted-foreground">
+            <p className="border-t border-border-soft p-4 text-center text-xs text-muted-foreground">
               Belum ada pelanggan.
             </p>
           )}

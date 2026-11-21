@@ -4,18 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
-  BookOpenText,
   Loader2,
-  MapPin,
   PencilLine,
-  Phone,
   Plus,
   Save,
   Store,
   UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,9 +33,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { BrandLogo, iconButtonClass } from "@/components/brand-logo";
 import { BackupSettings } from "@/components/settings/backup-settings";
+import { SectionHead } from "@/components/settings/section-head";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Toaster } from "@/components/ui/sonner";
+
+const th =
+  "h-auto px-3.5 py-2.5 text-[11px] font-bold tracking-[0.04em] text-subtle-foreground uppercase";
+
+function ActiveBadge({ active }: { active: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-[9px] py-[3px] text-[11px] font-bold ${active ? "border-success-border bg-success-bg text-success-fg" : "border-border bg-background text-muted-foreground"}`}
+    >
+      {active ? "Aktif" : "Nonaktif"}
+    </span>
+  );
+}
 
 type Cashier = {
   id: string;
@@ -207,52 +218,52 @@ export default function StoreSettingsPage() {
   const activeCount = cashiers.filter((cashier) => cashier.is_active).length;
 
   return (
-    <main className="min-h-screen bg-muted/40 text-foreground">
+    <main className="min-h-dvh bg-background text-foreground">
       <Toaster richColors position="top-right" />
-      <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <Button asChild variant="ghost" size="icon-sm">
-            <Link href="/" aria-label="Kembali ke buku piutang">
-              <ArrowLeft className="size-4" />
-            </Link>
-          </Button>
-          <div className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <BookOpenText className="size-5" />
-          </div>
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-card/95 px-3 backdrop-blur-xl sm:h-16 sm:px-5">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-[11px]">
+          <Link
+            href="/"
+            aria-label="Kembali ke buku piutang"
+            title="Kembali"
+            className={iconButtonClass}
+          >
+            <ArrowLeft className="size-[15px]" aria-hidden="true" />
+          </Link>
+          <BrandLogo className="hidden size-9 min-[380px]:grid sm:size-[38px]" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold leading-tight sm:text-base">Pengaturan Toko</p>
-            <p className="truncate text-xs text-muted-foreground">{store.name}</p>
+            <p className="truncate text-[15px] leading-tight font-extrabold tracking-tight">
+              Pengaturan Toko
+            </p>
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {store.name}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <ThemeSwitch compact />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <ThemeSwitch />
           <Button
-            className="gap-2"
+            size="sm"
+            className="h-[34px] gap-1.5 px-2.5 text-xs sm:h-8"
+            aria-label="Tambah kasir"
             onClick={() => {
               setEditing(null);
               setDialogOpen(true);
             }}
           >
-            <Plus className="size-4" />
-            <span className="hidden sm:inline">Tambah kasir</span>
+            <Plus className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
+            <span className="hidden min-[400px]:inline">Tambah kasir</span>
           </Button>
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl p-4 lg:p-8">
-        <section className="mb-5 rounded-2xl border border-border bg-card p-4 shadow-xs">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="grid size-9 place-items-center rounded-xl bg-secondary text-primary">
-              <Store className="size-4" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold">Informasi toko</h1>
-              <p className="text-xs leading-5 text-muted-foreground">
-                Nama dan alamat ini digunakan pada identitas serta struk
-                tagihan.
-              </p>
-            </div>
-          </div>
+      <div className="mx-auto flex max-w-[920px] flex-col gap-[18px] px-3 pt-4 pb-10 sm:px-5 sm:pt-6">
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-xs sm:p-5">
+          <SectionHead
+            icon={Store}
+            title="Informasi toko"
+            description="Nama dan alamat tampil pada header serta struk tagihan WhatsApp."
+          />
           {loading ? (
             <div className="flex items-center gap-2 py-5 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> Membuka informasi
@@ -262,53 +273,43 @@ export default function StoreSettingsPage() {
             <form
               key={store.updated_at ?? "new-store"}
               onSubmit={saveStore}
-              className="max-w-3xl space-y-3"
+              className="grid max-w-[640px] gap-3"
             >
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="storeName" className="text-xs">
-                    Nama toko
-                  </Label>
-                  <div className="relative">
-                    <Store
-                      className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <Input
-                      id="storeName"
-                      name="name"
-                      defaultValue={store.name}
-                      maxLength={100}
-                      placeholder="Contoh: Toko Berkah"
-                      className="pl-9"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="storeAddress" className="text-xs">
-                    Alamat toko
-                  </Label>
-                  <div className="relative">
-                    <MapPin
-                      className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <Textarea
-                      id="storeAddress"
-                      name="address"
-                      defaultValue={store.address}
-                      maxLength={500}
-                      rows={2}
-                      placeholder="Alamat lengkap toko"
-                      className="min-h-16 resize-y pl-9"
-                    />
-                  </div>
-                </div>
+              <div className="space-y-[5px]">
+                <Label htmlFor="storeName">Nama toko</Label>
+                <Input
+                  id="storeName"
+                  name="name"
+                  defaultValue={store.name}
+                  maxLength={100}
+                  placeholder="Contoh: Toko Berkah"
+                  required
+                />
+              </div>
+              <div className="space-y-[5px]">
+                <Label htmlFor="storeAddress">Alamat toko</Label>
+                <Textarea
+                  id="storeAddress"
+                  name="address"
+                  defaultValue={store.address}
+                  maxLength={500}
+                  rows={2}
+                  placeholder="Alamat lengkap toko"
+                  className="min-h-16 resize-y"
+                />
               </div>
               <div className="flex justify-end">
-                <Button type="submit" className="gap-2" disabled={savingStore}>
-                  <Save className="size-4" />
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="h-10 w-full gap-1.5 text-xs sm:h-8 sm:w-auto"
+                  disabled={savingStore}
+                >
+                  {savingStore ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Save className="size-3.5" />
+                  )}
                   {savingStore ? "Menyimpan…" : "Simpan informasi toko"}
                 </Button>
               </div>
@@ -318,49 +319,23 @@ export default function StoreSettingsPage() {
 
         <BackupSettings afterImport={loadCashiers} />
 
-        <section className="mb-5 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="grid size-10 place-items-center rounded-xl bg-secondary text-primary">
-                <UsersRound className="size-5" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Kasir aktif</p>
-                <p className="text-2xl font-bold">{activeCount}</p>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="grid size-10 place-items-center rounded-xl bg-secondary text-primary">
-                <Store className="size-5" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Total kasir tercatat
-                </p>
-                <p className="text-2xl font-bold">{cashiers.length}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
-          <div className="flex items-center justify-between gap-3 border-b border-border/70 p-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
-                <UsersRound className="size-4" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base font-bold">Informasi kasir</h1>
-                <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                  Kasir aktif akan muncul saat mencatat piutang dan pembayaran.
-                </p>
-              </div>
-            </div>
-            <Badge variant="outline" className="bg-background text-xs">
-              {loading ? "Memuat…" : `${cashiers.length} kasir`}
-            </Badge>
+          <div className="border-b border-border-soft p-4 sm:p-5 sm:pb-3.5">
+            <SectionHead
+              icon={UsersRound}
+              title="Daftar Kasir"
+              description={
+                loading
+                  ? "Membuka daftar kasir…"
+                  : `${activeCount} dari ${cashiers.length} kasir aktif muncul saat pencatatan transaksi.`
+              }
+              className="mb-0"
+              action={
+                <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-background px-[9px] py-[3px] text-[11px] font-bold text-muted-foreground">
+                  {loading ? "Memuat…" : `${cashiers.length} kasir`}
+                </span>
+              }
+            />
           </div>
           {loading ? (
             <div className="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
@@ -368,104 +343,71 @@ export default function StoreSettingsPage() {
             </div>
           ) : cashiers.length ? (
             <>
-              <div className="space-y-2.5 p-3 sm:hidden">
+              <ul className="divide-y divide-border-soft sm:hidden">
                 {cashiers.map((cashier) => (
-                  <article
+                  <li
                     key={cashier.id}
-                    className="rounded-xl border border-border/70 bg-background p-3 shadow-xs"
+                    className="flex items-center justify-between gap-3 px-4 py-3"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold text-primary">
-                          {cashier.name.trim().charAt(0).toUpperCase() || "K"}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="break-words text-sm font-semibold">
-                            {cashier.name}
-                          </p>
-                          <p className="mt-0.5 flex items-center gap-1.5 break-all text-xs text-muted-foreground">
-                            <Phone className="size-3.5 shrink-0" aria-hidden="true" />
-                            {cashier.phone || "WhatsApp belum diisi"}
-                          </p>
-                        </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-bold break-words">
+                        {cashier.name}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground tabular-nums">
+                        {cashier.phone || "WhatsApp belum diisi"}
+                      </p>
+                      <div className="mt-1.5">
+                        <ActiveBadge active={cashier.is_active} />
                       </div>
-                      <Badge
-                        variant="outline"
-                        className={
-                          cashier.is_active
-                            ? "border-emerald-300/70 bg-emerald-50 text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300"
-                            : "bg-muted text-muted-foreground"
-                        }
-                      >
-                        {cashier.is_active ? "Aktif" : "Nonaktif"}
-                      </Badge>
                     </div>
-                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
-                      <label className="flex items-center gap-2 text-xs font-medium">
-                        <Switch
-                          checked={cashier.is_active}
-                          onCheckedChange={(checked) =>
-                            void setActive(cashier, checked)
-                          }
-                          aria-label={`${cashier.is_active ? "Nonaktifkan" : "Aktifkan"} ${cashier.name}`}
-                        />
-                        Status kasir
-                      </label>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Switch
+                        checked={cashier.is_active}
+                        onCheckedChange={(checked) =>
+                          void setActive(cashier, checked)
+                        }
+                        aria-label={`${cashier.is_active ? "Nonaktifkan" : "Aktifkan"} ${cashier.name}`}
+                      />
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="gap-1.5"
+                        size="icon"
+                        aria-label={`Ubah ${cashier.name}`}
                         onClick={() => {
                           setEditing(cashier);
                           setDialogOpen(true);
                         }}
                       >
-                        <PencilLine className="size-3.5" /> Ubah
+                        <PencilLine className="size-4" />
                       </Button>
                     </div>
-                  </article>
+                  </li>
                 ))}
-              </div>
-              <Table className="hidden table-fixed sm:table">
-                <TableHeader className="bg-muted/40">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="h-9 w-[32%] px-4 text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Kasir
-                    </TableHead>
-                    <TableHead className="h-9 w-[30%] px-4 text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Nomor WhatsApp
-                    </TableHead>
-                    <TableHead className="h-9 w-[24%] px-4 text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Status
-                    </TableHead>
-                    <TableHead className="h-9 w-[14%] px-4 text-right text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Tindakan
+              </ul>
+              <Table className="hidden sm:table">
+                <TableHeader>
+                  <TableRow className="border-border-soft bg-background hover:bg-background">
+                    <TableHead className={th}>Kasir</TableHead>
+                    <TableHead className={th}>WhatsApp</TableHead>
+                    <TableHead className={th}>Status</TableHead>
+                    <TableHead className={`${th} text-right`}>
+                      <span className="sr-only">Tindakan</span>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {cashiers.map((cashier) => (
-                    <TableRow key={cashier.id} className="h-14">
-                      <TableCell className="px-4 py-2">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold text-primary">
-                            {cashier.name.trim().charAt(0).toUpperCase() || "K"}
-                          </span>
-                          <span className="truncate font-semibold">
-                            {cashier.name}
-                          </span>
-                        </div>
+                    <TableRow
+                      key={cashier.id}
+                      className="border-border-soft hover:bg-card-hover"
+                    >
+                      <TableCell className="px-3.5 py-3 text-[13px] font-bold">
+                        {cashier.name}
                       </TableCell>
-                      <TableCell className="px-4 py-2">
-                        <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                          <Phone className="size-3.5 shrink-0" aria-hidden="true" />
-                          <span className="truncate">
-                            {cashier.phone || "Belum diisi"}
-                          </span>
-                        </span>
+                      <TableCell className="px-3.5 py-3 text-[13px] text-muted-foreground tabular-nums">
+                        {cashier.phone || "Belum diisi"}
                       </TableCell>
-                      <TableCell className="px-4 py-2">
-                        <div className="flex items-center gap-2">
+                      <TableCell className="px-3.5 py-3">
+                        <div className="flex items-center gap-2.5">
                           <Switch
                             checked={cashier.is_active}
                             onCheckedChange={(checked) =>
@@ -473,23 +415,14 @@ export default function StoreSettingsPage() {
                             }
                             aria-label={`${cashier.is_active ? "Nonaktifkan" : "Aktifkan"} ${cashier.name}`}
                           />
-                          <Badge
-                            variant="outline"
-                            className={
-                              cashier.is_active
-                                ? "border-emerald-300/70 bg-emerald-50 text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300"
-                                : "bg-muted text-muted-foreground"
-                            }
-                          >
-                            {cashier.is_active ? "Aktif" : "Nonaktif"}
-                          </Badge>
+                          <ActiveBadge active={cashier.is_active} />
                         </div>
                       </TableCell>
-                      <TableCell className="px-4 py-2 text-right">
+                      <TableCell className="px-3.5 py-3 text-right">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="gap-1.5"
+                          className="gap-1.5 text-xs"
                           onClick={() => {
                             setEditing(cashier);
                             setDialogOpen(true);
@@ -504,11 +437,11 @@ export default function StoreSettingsPage() {
               </Table>
             </>
           ) : (
-            <div className="p-12 text-center">
+            <div className="p-10 text-center">
               <UsersRound className="mx-auto size-10 text-muted-foreground" />
               <h2 className="mt-4 font-bold">Belum ada kasir</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tambahkan tiga kasir Anda agar nama dapat dipilih saat mencatat
+                Tambahkan kasir agar nama dapat dipilih saat mencatat
                 transaksi.
               </p>
               <Button className="mt-5" onClick={() => setDialogOpen(true)}>
@@ -518,7 +451,6 @@ export default function StoreSettingsPage() {
           )}
         </section>
       </div>
-
       <Dialog
         open={dialogOpen}
         onOpenChange={(open) => {

@@ -1,17 +1,17 @@
 "use client";
 
-import { Switch } from "@/components/ui/switch";
+import { iconButtonClass } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
 type Props = {
-  compact?: boolean;
   className?: string;
 };
 
-export function ThemeSwitch({ compact = false, className }: Props) {
+/** Tombol ikon pengubah tema terang/gelap (bulan saat terang, matahari saat gelap). */
+export function ThemeSwitch({ className }: Props) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -22,42 +22,18 @@ export function ThemeSwitch({ compact = false, className }: Props) {
 
   const dark = mounted && resolvedTheme === "dark";
   const label = dark ? "Gunakan mode terang" : "Gunakan mode gelap";
+  const Icon = dark ? Sun : Moon;
 
   return (
-    <div
-      className={cn(
-        "flex h-9 items-center gap-2 rounded-lg border border-border/70 bg-card px-2.5 text-muted-foreground shadow-none transition-colors hover:bg-muted hover:text-foreground",
-        compact ? "px-2" : "sm:px-3",
-        className,
-      )}
+    <button
+      type="button"
       title={label}
+      aria-label={label}
+      disabled={!mounted}
+      onClick={() => setTheme(dark ? "light" : "dark")}
+      className={cn(iconButtonClass, "disabled:opacity-60", className)}
     >
-      <Sun
-        className={cn(
-          "size-3.5 transition-colors",
-          !dark && "text-amber-900",
-        )}
-        aria-hidden="true"
-      />
-      <Switch
-        size="sm"
-        checked={dark}
-        disabled={!mounted}
-        onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-        aria-label={label}
-      />
-      <Moon
-        className={cn(
-          "size-3.5 transition-colors",
-          dark && "text-sky-300",
-        )}
-        aria-hidden="true"
-      />
-      {!compact && (
-        <span className="hidden text-xs font-semibold lg:inline">
-          {dark ? "Gelap" : "Terang"}
-        </span>
-      )}
-    </div>
+      <Icon className="size-4" aria-hidden="true" />
+    </button>
   );
 }

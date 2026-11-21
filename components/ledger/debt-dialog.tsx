@@ -31,6 +31,9 @@ type Props = {
   postAction: PostAction;
   activeCashiers: Cashier[];
 };
+const selectClass =
+  "h-9 w-full rounded-md border border-input bg-card px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm";
+
 type DebtSuccess = {
   customerName: string;
   invoiceNo: string;
@@ -170,61 +173,53 @@ export function DebtDialog({
   return (
     <>
       <Dialog open={debtOpen} onOpenChange={setDebtOpen}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-5xl">
-        <form onSubmit={(event) => void submitDebtInvoice(event)}>
-          <DialogHeader>
-            <DialogTitle>Catat piutang {selected?.name}</DialogTitle>
-            <DialogDescription>
-              Tambahkan seluruh barang dalam satu nota. Nomor nota akan dibuat
-              otomatis saat disimpan. Total grosir dan diskon akan tersinkron
-              otomatis, misalnya 3 × Rp7.000 − Rp1.000 = Rp20.000.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5 py-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="date">Tanggal nota</Label>
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  required
-                  defaultValue={new Date().toISOString().slice(0, 10)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cashier">Kasir</Label>
-                <select
-                  id="cashier"
-                  name="cashier"
-                  required={activeCashiers.length > 0}
-                  disabled={!activeCashiers.length}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="">
-                    {activeCashiers.length
-                      ? "Pilih kasir"
-                      : "Tambahkan kasir di Pengaturan Toko"}
-                  </option>
-                  {activeCashiers.map((cashier) => (
-                    <option key={cashier.id} value={cashier.name}>
-                      {cashier.name}
+        <DialogContent className="sm:max-w-[720px]">
+          <form onSubmit={(event) => void submitDebtInvoice(event)}>
+            <DialogHeader>
+              <DialogTitle>
+                Catat piutang{selected ? ` · ${selected.name}` : ""}
+              </DialogTitle>
+              <DialogDescription>
+                Tambahkan seluruh barang dalam satu nota. Nomor nota dibuat
+                otomatis saat disimpan, dan total grosir tersinkron dengan
+                diskon.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3.5 py-5">
+              <div className="grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="date">Tanggal transaksi</Label>
+                  <Input
+                    id="date"
+                    name="date"
+                    type="date"
+                    required
+                    defaultValue={new Date().toISOString().slice(0, 10)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cashier">Kasir</Label>
+                  <select
+                    id="cashier"
+                    name="cashier"
+                    required={activeCashiers.length > 0}
+                    disabled={!activeCashiers.length}
+                    className={selectClass}
+                  >
+                    <option value="">
+                      {activeCashiers.length
+                        ? "Pilih kasir"
+                        : "Tambahkan kasir di Pengaturan Toko"}
                     </option>
-                  ))}
-                </select>
+                    {activeCashiers.map((cashier) => (
+                      <option key={cashier.id} value={cashier.name}>
+                        {cashier.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
-            <div className="space-y-3">
-              <div className="hidden grid-cols-[minmax(160px,2fr)_72px_minmax(110px,1fr)_105px_minmax(110px,1fr)_minmax(105px,1fr)_110px_40px] gap-2 px-1 text-xs font-medium text-muted-foreground lg:grid">
-                <span>Barang / keterangan</span>
-                <span>Jumlah</span>
-                <span>Harga eceran</span>
-                <span>Jenis harga</span>
-                <span>Total grosir</span>
-                <span>Diskon</span>
-                <span className="text-right">Jumlah harga</span>
-                <span />
-              </div>
+
               {invoiceItems.map((row, index) => {
                 const qty = Math.max(0, Math.round(asNumber(row.qty)));
                 const grossAmount = qty * Math.max(0, asNumber(row.unitPrice));
@@ -234,219 +229,215 @@ export function DebtDialog({
                     : 0;
                 const subtotal = Math.max(0, grossAmount - discount);
                 return (
-                  <div
+                  <fieldset
                     key={row.id}
-                    className="grid gap-3 rounded-xl border border-border bg-muted/30 p-3 lg:grid-cols-[minmax(160px,2fr)_72px_minmax(110px,1fr)_105px_minmax(110px,1fr)_minmax(105px,1fr)_110px_40px] lg:items-end lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0"
+                    className="grid gap-2.5 rounded-[14px] border border-border bg-background p-3 sm:p-3.5"
                   >
-                    <div className="space-y-1.5">
-                      <Label className="lg:sr-only" htmlFor={`item-${row.id}`}>
-                        Barang / keterangan
-                      </Label>
-                      <Input
-                        id={`item-${row.id}`}
-                        value={row.item}
-                        onChange={(event) =>
-                          updateInvoiceItem(row.id, {
-                            item: event.target.value,
-                          })
-                        }
-                        placeholder={`Barang ${index + 1}`}
-                        maxLength={200}
-                        required
-                        autoFocus={index === 0}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="lg:sr-only" htmlFor={`qty-${row.id}`}>
-                        Jumlah
-                      </Label>
-                      <FormattedNumberInput
-                        id={`qty-${row.id}`}
-                        value={row.qty}
-                        onValueChange={(value) =>
-                          updatePricing(
-                            row.id,
-                            { qty: value },
-                            "base",
-                          )
-                        }
-                        min={1}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="lg:sr-only" htmlFor={`unit-${row.id}`}>
-                        Harga eceran (Rp)
-                      </Label>
-                      <FormattedNumberInput
-                        id={`unit-${row.id}`}
-                        value={row.unitPrice}
-                        onValueChange={(value) =>
-                          updatePricing(
-                            row.id,
-                            { unitPrice: value },
-                            "base",
-                          )
-                        }
-                        min={1}
-                        placeholder="Rp"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="lg:sr-only" htmlFor={`mode-${row.id}`}>
-                        Jenis harga
-                      </Label>
-                      <select
-                        id={`mode-${row.id}`}
-                        value={row.priceMode}
-                        onChange={(event) =>
-                          updatePricing(
-                            row.id,
-                            {
-                              priceMode: event.target
-                                .value as DebtDraft["priceMode"],
-                            },
-                            "mode",
-                          )
-                        }
-                        className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                      >
-                        <option value="retail">Eceran</option>
-                        <option value="wholesale">Grosir</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label
-                        className="lg:sr-only"
-                        htmlFor={`wholesale-total-${row.id}`}
-                      >
-                        Total harga grosir (Rp)
-                      </Label>
-                      <FormattedNumberInput
-                        id={`wholesale-total-${row.id}`}
-                        value={row.wholesaleTotal}
-                        onValueChange={(value) =>
-                          updatePricing(
-                            row.id,
-                            { wholesaleTotal: value },
-                            "wholesaleTotal",
-                          )
-                        }
-                        min={1}
-                        max={grossAmount > 0 ? grossAmount : undefined}
-                        placeholder={
-                          row.priceMode === "wholesale"
-                            ? "Wajib diisi"
-                            : "Otomatis"
-                        }
-                        required={row.priceMode === "wholesale"}
-                        disabled={row.priceMode !== "wholesale"}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label
-                        className="lg:sr-only"
-                        htmlFor={`discount-${row.id}`}
-                      >
-                        Diskon (Rp)
-                      </Label>
-                      <FormattedNumberInput
-                        id={`discount-${row.id}`}
-                        value={row.discount}
-                        onValueChange={(value) =>
-                          updatePricing(
-                            row.id,
-                            { discount: value },
-                            "discount",
-                          )
-                        }
-                        min={0}
-                        max={grossAmount > 0 ? grossAmount - 1 : undefined}
-                        placeholder="Rp 0"
-                        disabled={row.priceMode !== "wholesale"}
-                      />
-                    </div>
-                    <div className="flex min-h-9 items-center justify-between gap-2 lg:flex-col lg:items-end lg:justify-center lg:gap-0">
-                      <span className="text-xs text-muted-foreground lg:hidden">
-                        Jumlah harga
-                      </span>
-                      <span className="font-semibold tabular-nums">
-                        {rupiah.format(subtotal)}
-                      </span>
-                      {row.priceMode === "wholesale" && discount > 0 && (
-                        <span className="text-[10px] text-amber-900 tabular-nums dark:text-amber-300">
-                          {rupiah.format(grossAmount)} − {rupiah.format(discount)}
-                        </span>
+                    <legend className="sr-only">Barang {index + 1}</legend>
+                    <div className="flex items-end gap-2">
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <Label htmlFor={`item-${row.id}`}>
+                          Nama barang
+                          {invoiceItems.length > 1 && (
+                            <span className="text-subtle-foreground">
+                              #{index + 1}
+                            </span>
+                          )}
+                        </Label>
+                        <Input
+                          id={`item-${row.id}`}
+                          value={row.item}
+                          onChange={(event) =>
+                            updateInvoiceItem(row.id, {
+                              item: event.target.value,
+                            })
+                          }
+                          placeholder="Contoh: Beras Premium 10kg"
+                          maxLength={200}
+                          required
+                          autoFocus={index === 0}
+                        />
+                      </div>
+                      {invoiceItems.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="icon"
+                          size="icon"
+                          aria-label={`Hapus barang ${index + 1}`}
+                          onClick={() =>
+                            setInvoiceItems((current) =>
+                              current.filter((item) => item.id !== row.id),
+                            )
+                          }
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
                       )}
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={`Hapus barang ${index + 1}`}
-                      disabled={invoiceItems.length === 1}
-                      onClick={() =>
-                        setInvoiceItems((current) =>
-                          current.filter((item) => item.id !== row.id),
-                        )
-                      }
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1.5fr_1.2fr]">
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`qty-${row.id}`}>Jumlah</Label>
+                        <FormattedNumberInput
+                          id={`qty-${row.id}`}
+                          value={row.qty}
+                          onValueChange={(value) =>
+                            updatePricing(row.id, { qty: value }, "base")
+                          }
+                          min={1}
+                          required
+                          className="tabular-nums"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`unit-${row.id}`}>
+                          Harga eceran (Rp)
+                        </Label>
+                        <FormattedNumberInput
+                          id={`unit-${row.id}`}
+                          value={row.unitPrice}
+                          onValueChange={(value) =>
+                            updatePricing(row.id, { unitPrice: value }, "base")
+                          }
+                          min={1}
+                          placeholder="Rp"
+                          required
+                          className="tabular-nums"
+                        />
+                      </div>
+                      <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                        <Label htmlFor={`mode-${row.id}`}>Mode harga</Label>
+                        <select
+                          id={`mode-${row.id}`}
+                          value={row.priceMode}
+                          onChange={(event) =>
+                            updatePricing(
+                              row.id,
+                              {
+                                priceMode: event.target
+                                  .value as DebtDraft["priceMode"],
+                              },
+                              "mode",
+                            )
+                          }
+                          className={selectClass}
+                        >
+                          <option value="retail">Eceran</option>
+                          <option value="wholesale">Grosir</option>
+                        </select>
+                      </div>
+                    </div>
+                    {row.priceMode === "wholesale" && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`discount-${row.id}`}>
+                            Diskon grosir (Rp)
+                          </Label>
+                          <FormattedNumberInput
+                            id={`discount-${row.id}`}
+                            value={row.discount}
+                            onValueChange={(value) =>
+                              updatePricing(
+                                row.id,
+                                { discount: value },
+                                "discount",
+                              )
+                            }
+                            min={0}
+                            max={grossAmount > 0 ? grossAmount - 1 : undefined}
+                            placeholder="Rp 0"
+                            className="tabular-nums"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`wholesale-total-${row.id}`}>
+                            Total grosir (Rp)
+                          </Label>
+                          <FormattedNumberInput
+                            id={`wholesale-total-${row.id}`}
+                            value={row.wholesaleTotal}
+                            onValueChange={(value) =>
+                              updatePricing(
+                                row.id,
+                                { wholesaleTotal: value },
+                                "wholesaleTotal",
+                              )
+                            }
+                            min={1}
+                            max={grossAmount > 0 ? grossAmount : undefined}
+                            placeholder="Wajib diisi"
+                            required
+                            className="tabular-nums"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-2 border-t border-dashed border-border pt-2 text-xs">
+                      <span className="text-muted-foreground">Jumlah harga</span>
+                      <span className="text-right tabular-nums">
+                        {row.priceMode === "wholesale" && discount > 0 && (
+                          <span className="mr-2 text-[11px] text-warning-fg">
+                            {rupiah.format(grossAmount)} −{" "}
+                            {rupiah.format(discount)}
+                          </span>
+                        )}
+                        <span className="text-[13px] font-bold">
+                          {rupiah.format(subtotal)}
+                        </span>
+                      </span>
+                    </div>
+                  </fieldset>
                 );
               })}
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="w-full gap-1.5 border-dashed text-xs sm:w-auto"
                 disabled={invoiceItems.length >= 50}
                 onClick={() =>
                   setInvoiceItems((current) => [...current, newDebtDraft()])
                 }
               >
-                <Plus className="size-4" /> Tambah barang
+                <Plus className="size-3.5" /> Tambah barang
               </Button>
-            </div>
-            <div className="flex items-center justify-between rounded-xl bg-secondary p-4">
-              <div>
-                <p className="text-sm text-secondary-foreground">Total nota</p>
-                <p className="text-xs text-muted-foreground">
-                  {invoiceItems.length} jenis barang
-                  {invoiceSummary.discount > 0
-                    ? ` · Diskon ${rupiah.format(invoiceSummary.discount)}`
-                    : ""}
-                </p>
+              <div className="flex items-center justify-between gap-3 rounded-xl bg-secondary px-3.5 py-3 text-secondary-foreground">
+                <div>
+                  <p className="text-[12.5px] font-semibold">Total nota piutang</p>
+                  <p className="text-[11px] opacity-80">
+                    {invoiceItems.length} jenis barang
+                    {invoiceSummary.discount > 0
+                      ? ` · Diskon ${rupiah.format(invoiceSummary.discount)}`
+                      : ""}
+                  </p>
+                </div>
+                <strong className="text-lg font-extrabold tracking-tight tabular-nums">
+                  {rupiah.format(invoiceTotal)}
+                </strong>
               </div>
-              <p className="text-2xl font-extrabold tracking-tight">
-                {rupiah.format(invoiceTotal)}
-              </p>
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDebtOpen(false)}
-            >
-              Batal
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                saving ||
-                !selected ||
-                invoiceTotal <= 0 ||
-                !activeCashiers.length
-              }
-            >
-              {saving && <Loader2 className="mr-2 size-4 animate-spin" />}Simpan
-              piutang
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDebtOpen(false)}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                variant="success"
+                disabled={
+                  saving ||
+                  !selected ||
+                  invoiceTotal <= 0 ||
+                  !activeCashiers.length
+                }
+              >
+                {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+                Simpan piutang
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
       <Dialog
@@ -459,10 +450,10 @@ export function DebtDialog({
           showCloseButton={false}
           className="overflow-hidden text-center sm:max-w-md"
         >
-          <div className="mx-auto grid size-16 animate-in place-items-center rounded-full bg-emerald-100 text-emerald-800 duration-500 zoom-in-50 dark:bg-emerald-400/15 dark:text-emerald-300">
+          <div className="mx-auto grid size-16 animate-in place-items-center rounded-full bg-success-bg text-success-fg duration-500 zoom-in-50">
             <CheckCircle2 className="size-9" aria-hidden="true" />
           </div>
-          <DialogHeader className="items-center text-center sm:text-center">
+          <DialogHeader className="mx-0 mt-0 items-center border-0 p-0 text-center sm:mx-0 sm:mt-0 sm:p-0 sm:text-center">
             <DialogTitle>Piutang berhasil ditambahkan</DialogTitle>
             <DialogDescription>
               Nota baru sudah tersimpan dan langsung masuk ke riwayat piutang.
@@ -498,13 +489,13 @@ export function DebtDialog({
                 <dt className="text-[11px] text-muted-foreground">
                   Total piutang
                 </dt>
-                <dd className="mt-1 text-sm font-semibold tabular-nums text-emerald-900 dark:text-emerald-300">
+                <dd className="mt-1 text-sm font-semibold tabular-nums text-success-fg">
                   {rupiah.format(successInfo.total)}
                 </dd>
               </div>
             </dl>
           )}
-          <DialogFooter className="sm:justify-center">
+          <DialogFooter className="static sm:justify-center">
             <Button
               type="button"
               className="min-w-32"

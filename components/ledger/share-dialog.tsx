@@ -90,32 +90,37 @@ export function ShareDialog({
 
   return (
     <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent
+        className="sm:max-w-[720px]"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+      >
         <DialogHeader>
-          <DialogTitle>Bagikan rincian piutang {selected?.name}</DialogTitle>
+          <DialogTitle>
+            Bagikan rincian piutang{selected ? ` · ${selected.name}` : ""}
+          </DialogTitle>
           <DialogDescription>
-            Pilih gaya pesan, lalu salin teks atau buka percakapan WhatsApp.
-            Pesan tidak dikirim otomatis.
+            Pilih gaya pesan, atur elemen yang ditampilkan, lalu salin atau
+            buka WhatsApp. Pesan tidak dikirim otomatis.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="space-y-3.5 py-1">
           <div className="grid gap-2 sm:grid-cols-3">
             {(
               [
                 {
                   id: "formal",
                   title: "Santai & informatif",
-                  note: "Bahasa santai dengan rincian lengkap",
+                  note: "Ringkas dengan rincian item",
                 },
                 {
                   id: "detailed",
                   title: "Struk tagihan",
-                  note: "Tampilan rapi dengan pembatas dan nota",
+                  note: "Rapi dengan garis & nomor nota",
                 },
                 {
                   id: "friendly",
                   title: "Pengingat ramah",
-                  note: "Bahasa santai dan sopan",
+                  note: "Bahasa sopan & hangat",
                 },
               ] as const
             ).map((option) => (
@@ -123,23 +128,21 @@ export function ShareDialog({
                 key={option.id}
                 type="button"
                 onClick={() => setShareStyle(option.id)}
-                className={`rounded-xl border p-3 text-left transition-colors ${shareStyle === option.id ? "border-primary bg-secondary" : "border-border hover:bg-muted"}`}
+                aria-pressed={shareStyle === option.id}
+                className={`rounded-xl border px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${shareStyle === option.id ? "border-ring bg-secondary" : "border-border bg-card hover:bg-card-hover"}`}
               >
-                <span className="block font-semibold">{option.title}</span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                <span className="block text-[12.5px] font-bold">{option.title}</span>
+                <span className="mt-0.5 block text-[11px] text-muted-foreground">
                   {option.note}
                 </span>
               </button>
             ))}
           </div>
-          <div className="rounded-xl border border-border p-3 sm:p-4">
-            <div>
-              <p className="text-sm font-semibold">Informasi yang ditampilkan</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Pilihan berlaku pada pesan dan struk yang dibagikan.
-              </p>
-            </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <div className="rounded-xl bg-background p-2.5">
+            <p className="px-1 pb-2 text-[11px] font-bold tracking-wide text-subtle-foreground uppercase">
+              Informasi yang ditampilkan
+            </p>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
               {(
                 [
                   ["storeName", "Nama toko"],
@@ -151,7 +154,7 @@ export function ShareDialog({
                 <Label
                   key={key}
                   htmlFor={`share-${key}`}
-                  className="flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2 font-normal"
+                  className="flex min-h-10 cursor-pointer items-center justify-between gap-2 rounded-lg border border-border-soft bg-card px-2.5 py-2 text-foreground"
                 >
                   <span className="text-xs font-medium">{label}</span>
                   <Switch
@@ -171,17 +174,17 @@ export function ShareDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sharePreview">Pratinjau pesan</Label>
+            <Label htmlFor="sharePreview">Pratinjau pesan WhatsApp</Label>
             <textarea
               id="sharePreview"
               readOnly
               value={shareMessage}
-              rows={16}
-              className={`w-full resize-y rounded-xl border border-input bg-muted/30 px-3 py-3 text-sm leading-6 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 ${shareStyle === "detailed" ? "font-mono" : ""}`}
+              rows={14}
+              className="w-full resize-y rounded-[14px] border border-[#c5e6cb] bg-[#e7f6e9] px-4 py-3.5 font-mono text-xs leading-[1.55] text-[#112a16] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 dark:border-[#1f4736] dark:bg-[#10251c] dark:text-[#d6f5e1]"
             />
           </div>
           {!selected?.phone && (
-            <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-400/15 dark:text-amber-200">
+            <p className="rounded-xl border border-warning-border bg-warning-bg p-3 text-xs text-warning-fg">
               Nomor WhatsApp pelanggan belum diisi. Rincian tetap dapat disalin.
             </p>
           )}
@@ -193,11 +196,12 @@ export function ShareDialog({
             className="gap-2"
             onClick={() => void copyDebtDetails()}
           >
-            <Copy className="size-4" /> Salin rincian
+            <Copy className="size-4" /> Salin teks
           </Button>
           <Button
             type="button"
-            className="gap-2 bg-emerald-700 hover:bg-emerald-800"
+            variant="success"
+            className="gap-2"
             disabled={whatsappNumber(selected?.phone ?? "").length < 9}
             onClick={openWhatsApp}
           >

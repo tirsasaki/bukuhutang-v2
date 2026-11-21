@@ -1,17 +1,15 @@
 "use client";
 
 import { ImportDialog } from "@/components/ledger/import-dialog";
-import { Badge } from "@/components/ui/badge";
+import { SectionHead } from "@/components/settings/section-head";
 import { Button } from "@/components/ui/button";
 import {
   AlertCircle,
-  CheckCircle2,
-  Clock3,
+  Cloud,
   CloudDownload,
   CloudUpload,
   Download,
   FileJson2,
-  GitBranch,
   Loader2,
   RefreshCw,
   RotateCcw,
@@ -55,6 +53,31 @@ function backupTimeInformation(backup: GitHubBackup) {
       timeZone: "Asia/Jakarta",
     }).format(createdAt),
   };
+}
+
+function Notice({
+  tone,
+  title,
+  text,
+}: {
+  tone: "danger" | "warning";
+  title: string;
+  text: string;
+}) {
+  return (
+    <div
+      className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-sm ${tone === "danger" ? "border-danger-border bg-danger-bg" : "border-warning-border bg-warning-bg"}`}
+    >
+      <AlertCircle
+        className={`mt-0.5 size-4 shrink-0 ${tone === "danger" ? "text-destructive" : "text-warning-fg"}`}
+        aria-hidden="true"
+      />
+      <div>
+        <p className="text-[13px] font-bold">{title}</p>
+        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{text}</p>
+      </div>
+    </div>
+  );
 }
 
 export function BackupSettings({ afterImport }: Props) {
@@ -203,225 +226,170 @@ export function BackupSettings({ afterImport }: Props) {
 
   return (
     <>
-      <section className="mb-5 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm">
-        <div className="flex items-start gap-3 border-b border-border/70 p-5">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
-            <FileJson2 className="size-5" aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="text-lg font-bold">Cadangan data</h2>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Simpan seluruh data toko ke GitHub atau unduh salinan ke perangkat.
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4 p-5">
-          <div className="overflow-hidden rounded-2xl border border-primary/20 bg-secondary/35">
-            <div className="flex flex-col gap-4 border-b border-primary/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                  <GitBranch className="size-5" aria-hidden="true" />
-                </span>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-sm font-bold">Cadangan GitHub</h3>
-                    <Badge variant="outline" className="bg-background/70">
-                      Repositori privat
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Tiga cadangan terbaru tersimpan di
-                    tirsasaki/bukuhutang-backup.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  className="shrink-0 bg-background"
-                  aria-label="Muat ulang daftar cadangan GitHub"
-                  disabled={loadingGithub}
-                  onClick={() => void loadGitHubBackups()}
-                >
-                  <RefreshCw
-                    className={`size-4 ${loadingGithub ? "animate-spin" : ""}`}
-                    aria-hidden="true"
-                  />
-                </Button>
-                <Button
-                  type="button"
-                  className="h-9 flex-1 gap-2 rounded-lg text-xs! font-semibold! sm:flex-none"
-                  disabled={
-                    uploadingGithub || loadingGithub || !githubConfigured
-                  }
-                  onClick={() => void uploadToGitHub()}
-                >
-                  {uploadingGithub ? (
-                    <Loader2
-                      className="size-4 animate-spin"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <CloudUpload className="size-4" aria-hidden="true" />
-                  )}
-                  {uploadingGithub ? "Menyimpan…" : "Simpan ke GitHub"}
-                </Button>
-              </div>
-            </div>
-
-            {loadingGithub ? (
-              <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Membuka riwayat cadangan…
-              </div>
-            ) : githubError ? (
-              <div className="flex items-start gap-3 p-4 text-sm">
-                <AlertCircle
-                  className="mt-0.5 size-5 shrink-0 text-destructive"
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="font-semibold">GitHub belum dapat dihubungi</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {githubError}
-                  </p>
-                </div>
-              </div>
-            ) : !githubConfigured ? (
-              <div className="flex items-start gap-3 p-4 text-sm">
-                <AlertCircle
-                  className="mt-0.5 size-5 shrink-0 text-amber-900 dark:text-amber-300"
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="font-semibold">GitHub belum terhubung</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Tambahkan token repositori pada konfigurasi server untuk
-                    mulai menyimpan cadangan.
-                  </p>
-                </div>
-              </div>
-            ) : githubBackups.length ? (
-              <div className="divide-y divide-border/70">
-                {githubBackups.map((backup) => {
-                  const restoring = restoringPath === backup.path;
-                  const timeInformation = backupTimeInformation(backup);
-                  return (
-                    <div
-                      key={backup.sha || backup.path}
-                      className="flex flex-col gap-3 bg-background/55 p-4 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-background text-primary">
-                          <CheckCircle2 className="size-4" aria-hidden="true" />
-                        </span>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold">
-                            {timeInformation?.date ?? "Cadangan lama"}
-                          </p>
-                          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
-                            {timeInformation && (
-                              <>
-                                <Clock3 className="size-3.5" aria-hidden="true" />
-                                <span>Pukul {timeInformation.time}</span>
-                                <span aria-hidden="true">·</span>
-                              </>
-                            )}
-                            <span>
-                              {formatSize(backup.size)}
-                              {backup.legacy ? " · Format lama" : " · GitHub"}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 bg-background shadow-none"
-                        disabled={Boolean(restoringPath)}
-                        onClick={() => void restoreFromGitHub(backup)}
-                      >
-                        {restoring ? (
-                          <Loader2
-                            className="size-4 animate-spin"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <CloudDownload
-                            className="size-4"
-                            aria-hidden="true"
-                          />
-                        )}
-                        {restoring ? "Memulihkan…" : "Pulihkan"}
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="p-7 text-center">
-                <CloudUpload
-                  className="mx-auto size-8 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <p className="mt-3 text-sm font-semibold">
-                  Belum ada cadangan GitHub
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Simpan cadangan pertama untuk membuat riwayat pemulihan.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              <span className="grid size-9 place-items-center rounded-lg bg-emerald-50 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-300">
-                <Download className="size-4" aria-hidden="true" />
-              </span>
-              <h3 className="mt-4 text-sm font-bold">Unduh ke perangkat</h3>
-              <p className="mt-1 min-h-10 text-xs leading-5 text-muted-foreground">
-                Simpan salinan JSON yang dapat dipindahkan atau diarsipkan
-                sendiri.
-              </p>
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-xs sm:p-5">
+        <SectionHead
+          icon={Cloud}
+          title="Cadangan & Pemulihan Data"
+          description="Format JSON bukuhutang-v2 · Menyimpan maks. 3 cadangan terbaru di GitHub privat."
+          action={
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
               <Button
-                className="mt-4 h-9 w-full gap-2 rounded-lg text-xs! font-semibold!"
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-10 gap-1.5 text-xs sm:h-8"
                 disabled={downloading}
                 onClick={() => void downloadBackup()}
               >
                 {downloading ? (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Download className="size-4" aria-hidden="true" />
+                  <Download className="size-3.5" aria-hidden="true" />
                 )}
-                {downloading ? "Menyiapkan…" : "Unduh cadangan"}
+                {downloading ? "Menyiapkan…" : "Unduh JSON"}
+              </Button>
+              <Button
+                type="button"
+                variant="success"
+                size="sm"
+                className="h-10 gap-1.5 text-xs sm:h-8"
+                disabled={uploadingGithub || loadingGithub || !githubConfigured}
+                onClick={() => void uploadToGitHub()}
+              >
+                {uploadingGithub ? (
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <CloudUpload className="size-3.5" aria-hidden="true" />
+                )}
+                {uploadingGithub ? "Menyimpan…" : "Simpan ke GitHub"}
               </Button>
             </div>
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-              <span className="grid size-9 place-items-center rounded-lg bg-sky-50 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300">
-                <RotateCcw className="size-4" aria-hidden="true" />
-              </span>
-              <h3 className="mt-4 text-sm font-bold">Impor dari perangkat</h3>
-              <p className="mt-1 min-h-10 text-xs leading-5 text-muted-foreground">
-                Pulihkan cadangan terbaru atau berkas format lama dari perangkat.
+          }
+        />
+
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-[11px] font-bold tracking-wide text-subtle-foreground uppercase">
+            Riwayat cadangan GitHub
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs"
+            aria-label="Muat ulang daftar cadangan GitHub"
+            disabled={loadingGithub}
+            onClick={() => void loadGitHubBackups()}
+          >
+            <RefreshCw
+              className={`size-3.5 ${loadingGithub ? "animate-spin" : ""}`}
+              aria-hidden="true"
+            />
+            Muat ulang
+          </Button>
+        </div>
+
+        {loadingGithub ? (
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-border-soft bg-background p-6 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            Membuka riwayat cadangan…
+          </div>
+        ) : githubError ? (
+          <Notice
+            tone="danger"
+            title="GitHub belum dapat dihubungi"
+            text={githubError}
+          />
+        ) : !githubConfigured ? (
+          <Notice
+            tone="warning"
+            title="GitHub belum terhubung"
+            text="Tambahkan token repositori pada konfigurasi server untuk mulai menyimpan cadangan."
+          />
+        ) : githubBackups.length ? (
+          <ul className="grid gap-2">
+            {githubBackups.map((backup, index) => {
+              const restoring = restoringPath === backup.path;
+              const timeInformation = backupTimeInformation(backup);
+              return (
+                <li
+                  key={backup.sha || backup.path}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-soft bg-background px-3.5 py-[11px]"
+                >
+                  <div className="min-w-0">
+                    <p className="flex flex-wrap items-center gap-1.5 font-mono text-[12.5px] font-bold break-all">
+                      {backup.name}
+                      {index === 0 && (
+                        <span className="rounded-full border border-success-border bg-success-bg px-[9px] py-[3px] font-sans text-[11px] font-bold text-success-fg">
+                          Terbaru
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                      {timeInformation
+                        ? `${timeInformation.date}, ${timeInformation.time}`
+                        : "Cadangan lama"}{" "}
+                      · {formatSize(backup.size)}
+                      {backup.legacy ? " · Format lama" : ""}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 w-full gap-1.5 text-xs sm:h-8 sm:w-auto"
+                    disabled={Boolean(restoringPath)}
+                    onClick={() => void restoreFromGitHub(backup)}
+                  >
+                    {restoring ? (
+                      <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <CloudDownload className="size-3.5" aria-hidden="true" />
+                    )}
+                    {restoring ? "Memulihkan…" : "Pulihkan"}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border p-6 text-center">
+            <CloudUpload
+              className="mx-auto size-7 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <p className="mt-2 text-sm font-bold">Belum ada cadangan GitHub</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Simpan cadangan pertama untuk membuat riwayat pemulihan.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-col gap-3 rounded-xl border border-border-soft p-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-info-bg text-info-fg">
+              <RotateCcw className="size-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold">Impor dari perangkat</p>
+              <p className="text-xs leading-5 text-muted-foreground">
+                Pulihkan cadangan JSON terbaru atau berkas format lama.
               </p>
-              <Button
-                variant="outline"
-                className="mt-4 h-9 w-full gap-2 rounded-lg text-xs! font-semibold! shadow-none"
-                onClick={() => setImportOpen(true)}
-              >
-                <RotateCcw className="size-4" aria-hidden="true" />
-                Pilih berkas JSON
-              </Button>
             </div>
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 shrink-0 gap-1.5 text-xs sm:h-8"
+            onClick={() => setImportOpen(true)}
+          >
+            <FileJson2 className="size-3.5" aria-hidden="true" />
+            Pilih berkas JSON
+          </Button>
         </div>
-        <p className="flex items-start gap-2 border-t border-border/70 bg-secondary/30 px-5 py-3 text-xs leading-5 text-secondary-foreground">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+
+        <p className="mt-3 flex items-start gap-2 text-[11.5px] leading-5 text-muted-foreground">
+          <ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
           Token GitHub hanya digunakan oleh server. Berkas yang ditampilkan
           dibatasi untuk akun yang sedang masuk.
         </p>

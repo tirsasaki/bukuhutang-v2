@@ -15,6 +15,10 @@ import { useMemo, useState } from "react";
 
 import { asNumber, rupiah } from "@/lib/ledger/format";
 import type { Cashier, Customer, Debt, SubmitForm } from "@/lib/ledger/types";
+const modeCard =
+  "rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:bg-card-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
+const modeCardActive = "border-ring bg-secondary hover:bg-secondary";
+
 type Props = {
   paymentOpen: boolean;
   setPaymentOpen: (open: boolean) => void;
@@ -60,9 +64,11 @@ export function PaymentDialog({
           }
         >
           <DialogHeader>
-            <DialogTitle>Catat pembayaran {selected?.name}</DialogTitle>
+            <DialogTitle>
+              Catat pembayaran{selected ? ` · ${selected.name}` : ""}
+            </DialogTitle>
             <DialogDescription>
-              Pembayaran dialokasikan otomatis dari piutang paling lama.
+              Dialokasikan otomatis mulai dari nota piutang paling lama (FIFO).
             </DialogDescription>
           </DialogHeader>
           <input
@@ -75,23 +81,23 @@ export function PaymentDialog({
             name="creditAmount"
             value={useCredit ? paymentCreditAmount : "0"}
           />
-          <div className="space-y-4 py-5">
-            <div className="rounded-xl bg-secondary p-4">
+          <div className="space-y-3.5 py-5">
+            <div className="rounded-[14px] bg-secondary px-4 py-3.5">
               <div className="flex items-end justify-between gap-4">
                 <div>
-                  <p className="text-sm text-secondary-foreground">
+                  <p className="text-xs text-secondary-foreground">
                     Sisa piutang pelanggan
                   </p>
-                  <p className="mt-1 text-2xl font-bold">
+                  <p className="text-[22px] font-extrabold tracking-tight text-primary tabular-nums">
                     {rupiah.format(selected?.balance ?? 0)}
                   </p>
                 </div>
                 {(selected?.credit_balance ?? 0) > 0 && (
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground">
                       Saldo tersimpan
                     </p>
-                    <p className="font-bold text-emerald-900 dark:text-emerald-300">
+                    <p className="font-extrabold text-success-fg tabular-nums">
                       {rupiah.format(selected?.credit_balance ?? 0)}
                     </p>
                   </div>
@@ -105,11 +111,11 @@ export function PaymentDialog({
                   setPaymentMode("partial");
                   setPaymentCashAmount("");
                 }}
-                className={`rounded-xl border p-3 text-left transition-colors ${paymentMode === "partial" ? "border-primary bg-secondary" : "border-border hover:bg-muted"}`}
+                className={`${modeCard} ${paymentMode === "partial" ? modeCardActive : ""}`}
               >
-                <span className="block font-semibold">Bayar sebagian</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  Masukkan jumlah pembayaran
+                <span className="block text-[12.5px] font-bold">Bayar sebagian</span>
+                <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                  Masukkan nominal diterima
                 </span>
               </button>
               <button
@@ -126,16 +132,16 @@ export function PaymentDialog({
                     ),
                   );
                 }}
-                className={`rounded-xl border p-3 text-left transition-colors ${paymentMode === "all" ? "border-primary bg-secondary" : "border-border hover:bg-muted"}`}
+                className={`${modeCard} ${paymentMode === "all" ? modeCardActive : ""}`}
               >
-                <span className="block font-semibold">Lunasi semua</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  Kelebihan disimpan sebagai saldo
+                <span className="block text-[12.5px] font-bold">Lunasi semua</span>
+                <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                  Otomatis isi {rupiah.format(selected?.balance ?? 0)}
                 </span>
               </button>
             </div>
             {(selected?.credit_balance ?? 0) > 0 && (
-              <div className="rounded-xl border border-emerald-700/20 p-3 dark:border-emerald-300/25">
+              <div className="rounded-xl border border-success-border bg-success-bg/40 p-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -153,21 +159,25 @@ export function PaymentDialog({
                         String(Math.max(0, (selected?.balance ?? 0) - credit)),
                       );
                   }}
-                  className="flex w-full items-center justify-between text-left"
+                  role="switch"
+                  aria-checked={useCredit}
+                  className="flex w-full items-center justify-between gap-3 text-left"
                 >
                   <span>
-                    <span className="block font-semibold">
-                      Gunakan saldo kelebihan bayar
+                    <span className="block text-[12.5px] font-bold">
+                      Gunakan saldo kelebihan bayar (
+                      {rupiah.format(selected?.credit_balance ?? 0)})
                     </span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
                       Saldo tidak digunakan sampai pilihan ini diaktifkan
                     </span>
                   </span>
                   <span
-                    className={`h-5 w-9 rounded-full p-0.5 transition-colors ${useCredit ? "bg-emerald-700 dark:bg-emerald-400" : "bg-muted"}`}
+                    aria-hidden="true"
+                    className={`flex h-[22px] w-[38px] shrink-0 items-center rounded-full px-[3px] transition-colors ${useCredit ? "bg-[#13857c]" : "bg-border"}`}
                   >
                     <span
-                      className={`block size-4 rounded-full bg-white transition-transform ${useCredit ? "translate-x-4" : ""}`}
+                      className={`block size-4 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-transform ${useCredit ? "translate-x-4" : ""}`}
                     />
                   </span>
                 </button>
@@ -201,7 +211,9 @@ export function PaymentDialog({
             )}
             <div className="space-y-2">
               <Label htmlFor="paymentAmount">
-                {paymentMode === "all" ? "Uang diterima" : "Pembayaran tunai"}
+                {paymentMode === "all"
+                  ? "Uang diterima (Rp)"
+                  : "Nominal tunai / transfer (Rp)"}
               </Label>
               <FormattedNumberInput
                 id="paymentAmount"
@@ -248,13 +260,13 @@ export function PaymentDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="receivedBy">Diterima oleh</Label>
+              <Label htmlFor="receivedBy">Kasir penerima</Label>
               <select
                 id="receivedBy"
                 name="receivedBy"
                 required
                 disabled={!activeCashiers.length}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-9 w-full rounded-md border border-input bg-card px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
               >
                 <option value="">
                   {activeCashiers.length

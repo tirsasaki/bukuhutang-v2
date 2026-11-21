@@ -1,22 +1,11 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  ArrowDownWideNarrow,
-  CheckCheck,
-  ChevronDown,
-  ChevronRight,
-  Clock3,
-  Plus,
-  X,
-  Loader2,
-  Search,
-  UsersRound,
-} from "lucide-react";
+import { ChevronDown, Loader2, Plus, Search, UsersRound, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
-import { formatDate, rupiah } from "@/lib/ledger/format";
+import { formatDate, initials, rupiah } from "@/lib/ledger/format";
 import type { LedgerData } from "@/lib/ledger/types";
 type Props = {
   data: LedgerData;
@@ -26,6 +15,10 @@ type Props = {
   setCustomerOpen: (open: boolean) => void;
   mobileDetailOpen: boolean;
 };
+
+type SortKey = "latest" | "oldest" | "largest" | "smallest";
+type StatusKey = "all" | "unpaid" | "paid";
+
 export function CustomerList({
   data,
   loading,
@@ -36,19 +29,17 @@ export function CustomerList({
 }: Props) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
-  const [customerSort, setCustomerSort] = useState<
-    "latest" | "oldest" | "largest" | "smallest"
-  >("latest");
-  const [customerStatus, setCustomerStatus] = useState<
-    "all" | "unpaid" | "paid"
-  >("all");
+  const [customerSort, setCustomerSort] = useState<SortKey>("latest");
+  const [customerStatus, setCustomerStatus] = useState<StatusKey>("all");
+  const unpaidCount = data.customers.filter((c) => c.balance > 0).length;
+  const paidCount = data.customers.length - unpaidCount;
   const visibleCustomers = useMemo(
     () =>
       data.customers
         .filter((customer) =>
           `${customer.name} ${customer.phone}`
             .toLowerCase()
-            .includes(query.toLowerCase()),
+            .includes(query.trim().toLowerCase()),
         )
         .filter(
           (customer) =>
@@ -71,45 +62,65 @@ export function CustomerList({
     [customerSort, customerStatus, data.customers, query],
   );
 
+  const filters = [
+    {
+      id: "all",
+      label: "Semua",
+      count: data.customers.length,
+      active: "border-border bg-card text-primary shadow-xs",
+    },
+    {
+      id: "unpaid",
+      label: "Perlu ditagih",
+      count: unpaidCount,
+      active: "border-warning-border bg-warning-bg text-warning-fg",
+    },
+    {
+      id: "paid",
+      label: "Lunas",
+      count: paidCount,
+      active: "border-success-border bg-success-bg text-success-fg",
+    },
+  ] as const;
+
   return (
     <aside
-      className={`${mobileDetailOpen ? "hidden" : "block"} border-b border-border bg-card lg:block lg:overflow-y-auto lg:border-b-0 lg:border-r`}
+      className={`${mobileDetailOpen ? "hidden" : "flex"} min-h-0 flex-col bg-card md:flex md:border-r md:border-border`}
     >
-      <div className="sticky top-0 z-10 space-y-3 border-b border-border/80 bg-card/95 p-4 backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 border-b border-border-soft p-4">
+        <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <h1 className="text-base font-bold tracking-tight">
+            <h1 className="text-[15px] font-extrabold tracking-tight">
               Daftar pelanggan
             </h1>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-px text-[11px] text-muted-foreground">
               {data.customers.length} pelanggan tersimpan
             </p>
           </div>
           <Button
             type="button"
-            aria-label="Tambah pelanggan"
-            className="h-9 gap-2 rounded-xl pr-3 pl-1.5 text-xs! font-semibold! shadow-sm transition-colors"
+            size="sm"
+            className="h-8 gap-1.5 rounded-lg px-2.5 text-xs"
             onClick={() => setCustomerOpen(true)}
           >
-            <span className="grid size-6 place-items-center rounded-lg bg-white/15">
-              <Plus className="size-3.5" aria-hidden="true" />
-            </span>
+            <Plus className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
             Tambah
           </Button>
         </div>
-        <div className="group relative">
+
+        <div className="relative">
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary"
+            className="pointer-events-none absolute top-1/2 left-[11px] size-[15px] -translate-y-1/2 text-subtle-foreground"
           />
           <Input
             ref={searchRef}
-            type="text"
+            type="search"
             aria-label="Cari pelanggan berdasarkan nama atau nomor WhatsApp"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cari nama atau nomor WhatsApp"
-            className="h-11 rounded-xl border-border/80 bg-muted/40 pr-11 pl-10 text-sm! shadow-none transition-colors placeholder:text-xs focus-visible:border-primary/40 focus-visible:bg-card focus-visible:ring-2 focus-visible:ring-primary/10"
+            placeholder="Cari nama atau nomor WhatsApp..."
+            className="h-10 rounded-[10px] border-border-soft bg-background pr-10 pl-[34px] focus-visible:bg-card md:text-[13px] [&::-webkit-search-cancel-button]:hidden"
           />
           {query && (
             <button
@@ -119,133 +130,84 @@ export function CustomerList({
                 setQuery("");
                 searchRef.current?.focus();
               }}
-              className="absolute top-1/2 right-1.5 grid size-8 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-border/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="absolute top-1/2 right-1.5 grid size-7 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               <X className="size-3.5" aria-hidden="true" />
             </button>
           )}
         </div>
+
         <div
           role="group"
           aria-label="Filter status pelanggan"
-          className="grid grid-cols-[0.9fr_1.45fr_0.9fr] gap-1 rounded-xl bg-muted/70 p-1"
+          className="grid grid-cols-[0.85fr_1.35fr_0.85fr] gap-1 rounded-[11px] bg-background p-[3px]"
         >
-          {(
-            [
-              {
-                id: "all",
-                label: "Semua",
-                icon: UsersRound,
-                count: data.customers.length,
-                activeClass: "border-primary/20 bg-primary/5 text-primary",
-                iconClass: "text-primary",
-                badgeClass: "bg-primary/10 text-primary",
-              },
-              {
-                id: "unpaid",
-                label: "Perlu ditagih",
-                icon: Clock3,
-                count: data.customers.filter((customer) => customer.balance > 0)
-                  .length,
-                activeClass:
-                  "border-amber-500/30 bg-amber-400/10 text-amber-900 dark:text-amber-300",
-                iconClass: "text-amber-900 dark:text-amber-300",
-                badgeClass:
-                  "bg-amber-400/15 text-amber-900 dark:text-amber-300",
-              },
-              {
-                id: "paid",
-                label: "Lunas",
-                icon: CheckCheck,
-                count: data.customers.filter(
-                  (customer) => customer.balance <= 0,
-                ).length,
-                activeClass:
-                  "border-emerald-500/25 bg-emerald-400/10 text-emerald-900 dark:text-emerald-300",
-                iconClass: "text-emerald-900 dark:text-emerald-300",
-                badgeClass:
-                  "bg-emerald-400/10 text-emerald-900 dark:text-emerald-300",
-              },
-            ] as const
-          ).map(({ icon: Icon, ...filter }) => (
-            <button
-              key={filter.id}
-              type="button"
-              aria-pressed={customerStatus === filter.id}
-              onClick={() => setCustomerStatus(filter.id)}
-              className={`flex h-8 min-w-0 items-center justify-center gap-0.5 rounded-lg border px-0.5 whitespace-nowrap transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${customerStatus === filter.id ? filter.activeClass : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-card/60 hover:text-foreground"}`}
-            >
-              <Icon
-                className={`size-3 shrink-0 ${filter.iconClass}`}
-                aria-hidden="true"
-              />
-              <span className="text-[10px] font-semibold tracking-tight">
-                {filter.label}
-              </span>
-              <span
-                className={`min-w-4 shrink-0 rounded-md px-1 py-0.5 text-[9px] leading-none font-semibold tabular-nums ${filter.badgeClass}`}
+          {filters.map((filter) => {
+            const isActive = customerStatus === filter.id;
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => setCustomerStatus(filter.id)}
+                className={`flex min-h-8 min-w-0 items-center justify-center gap-1 rounded-lg border px-1 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${isActive ? filter.active : "border-transparent text-muted-foreground hover:text-foreground"}`}
               >
-                {filter.count}
-              </span>
-            </button>
-          ))}
+                <span className="truncate">{filter.label}</span>
+                <span className="rounded-md bg-muted px-[5px] py-px text-[10px] tabular-nums">
+                  {filter.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <div className="flex items-center justify-between gap-2">
+
+        <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <div className="relative min-w-0">
-            <ArrowDownWideNarrow
-              aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 left-0 size-3.5 -translate-y-1/2 text-muted-foreground"
-            />
             <select
               value={customerSort}
               onChange={(event) =>
-                setCustomerSort(event.target.value as typeof customerSort)
+                setCustomerSort(event.target.value as SortKey)
               }
               aria-label="Urutkan pelanggan"
-              className="h-7 w-full appearance-none rounded-md border border-transparent bg-transparent pr-6 pl-5 text-xs font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring dark:border-border/70 dark:bg-popover dark:text-popover-foreground dark:scheme-dark dark:[&>option]:bg-popover dark:[&>option]:text-popover-foreground"
+              className="h-7 max-w-full cursor-pointer appearance-none truncate rounded-md bg-transparent pr-5 text-xs font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&>option]:bg-popover [&>option]:text-popover-foreground"
             >
-              <option value="latest">Aktivitas terbaru</option>
-              <option value="oldest">Aktivitas terlama</option>
-              <option value="largest">Piutang terbesar</option>
-              <option value="smallest">Piutang terkecil</option>
+              <option value="latest">Urut: Aktivitas terbaru</option>
+              <option value="largest">Urut: Piutang terbesar</option>
+              <option value="smallest">Urut: Piutang terkecil</option>
+              <option value="oldest">Urut: Aktivitas terlama</option>
             </select>
             <ChevronDown
               aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 right-1 size-3 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute top-1/2 right-0.5 size-3 -translate-y-1/2"
             />
           </div>
           <span
             aria-live="polite"
             aria-atomic="true"
-            className="shrink-0 text-[11px] text-muted-foreground tabular-nums"
+            className="shrink-0 tabular-nums"
           >
             {visibleCustomers.length} tampil
           </span>
         </div>
       </div>
-      <div className="p-2.5">
-        {!loading && visibleCustomers.length > 0 && (
-          <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <span>Pelanggan</span>
-            <span>Saldo piutang</span>
-          </div>
-        )}
+
+      <div className="flex flex-col gap-[5px] p-2.5 md:min-h-0 md:flex-1 md:overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> Membuka catatan…
           </div>
         )}
         {!loading && !visibleCustomers.length && (
-          <div className="m-2 rounded-2xl border border-dashed p-8 text-center">
+          <div className="m-1.5 rounded-2xl border border-dashed border-border p-7 text-center">
             <div className="mx-auto grid size-11 place-items-center rounded-xl bg-muted text-muted-foreground">
               <UsersRound className="size-5" />
             </div>
-            <p className="mt-3 font-semibold">
+            <p className="mt-3 text-sm font-bold">
               {data.customers.length
                 ? "Pelanggan tidak ditemukan"
                 : "Belum ada pelanggan"}
             </p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {data.customers.length
                 ? "Coba ubah pencarian atau pilihan status."
                 : "Tambahkan pelanggan baru atau pulihkan cadangan melalui pengaturan."}
@@ -275,63 +237,60 @@ export function CustomerList({
             </div>
           </div>
         )}
-        <div className="space-y-1.5">
-          {visibleCustomers.map((customer) => (
+        {visibleCustomers.map((customer) => {
+          const selected = selectedId === customer.id;
+          const unpaid = customer.balance > 0;
+          return (
             <button
               type="button"
               key={customer.id}
-              aria-pressed={selectedId === customer.id}
+              aria-pressed={selected}
               onClick={() => setSelectedId(customer.id)}
-              className={`group relative grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl border px-2.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-[380px]:gap-2.5 min-[380px]:px-3 ${selectedId === customer.id ? "border-primary/20 bg-secondary/80 shadow-xs" : "border-transparent bg-card hover:border-border/80 hover:bg-muted/50"}`}
+              className={`grid w-full grid-cols-[38px_minmax(0,1fr)_auto] items-center gap-2.5 rounded-[13px] border p-[11px] text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${selected ? "border-primary/20 bg-secondary shadow-xs dark:border-brand/30" : "border-transparent hover:border-border-soft hover:bg-card-hover"}`}
             >
               <span
-                className={`grid size-9 shrink-0 place-items-center rounded-xl text-xs font-bold ${selectedId === customer.id ? "bg-primary text-primary-foreground" : "bg-secondary text-primary"}`}
+                className={`grid size-[38px] place-items-center rounded-[11px] text-xs font-extrabold tracking-wide ${selected ? "bg-primary text-primary-foreground" : "bg-secondary text-primary"}`}
               >
-                {customer.name.slice(0, 2).toUpperCase()}
+                {initials(customer.name)}
               </span>
               <span className="min-w-0">
-                <span className="flex items-center gap-2">
-                  <span className="truncate text-sm font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate text-[13px] font-bold">
                     {customer.name}
                   </span>
                   <span
-                    className={`size-1.5 shrink-0 rounded-full ${customer.balance > 0 ? "bg-amber-500" : "bg-emerald-500"}`}
+                    className={`size-1.5 shrink-0 rounded-full ${unpaid ? "bg-warning-dot" : "bg-success-dot"}`}
+                    aria-hidden="true"
                   />
                 </span>
-                <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                <span className="mt-1 flex flex-wrap items-center gap-[5px] text-[10.5px] text-muted-foreground">
+                  <span className="rounded-[5px] bg-background px-1.5 py-px font-semibold">
                     {customer.debt_count} catatan
                   </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    Aktif {formatDate(customer.last_activity_at)}
-                  </span>
-                  {customer.credit_balance > 0 && (
-                    <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-300">
+                  {customer.credit_balance > 0 ? (
+                    <span className="rounded-[5px] bg-success-bg px-1.5 py-px font-bold text-success-fg">
                       Saldo {rupiah.format(customer.credit_balance)}
                     </span>
+                  ) : (
+                    <span>{formatDate(customer.last_activity_at)}</span>
                   )}
                 </span>
               </span>
-              <span className="flex min-w-0 items-center justify-end gap-1 min-[380px]:min-w-[88px]">
-                <span className="text-right">
-                  <span
-                    className={`block text-xs font-bold tracking-tight tabular-nums min-[380px]:text-sm ${customer.balance > 0 ? "text-foreground" : "text-emerald-900 dark:text-emerald-300"}`}
-                  >
-                    {rupiah.format(customer.balance)}
-                  </span>
-                  <span
-                    className={`mt-1 block text-[10px] font-medium ${customer.balance > 0 ? "text-amber-900 dark:text-amber-300" : "text-emerald-900 dark:text-emerald-300"}`}
-                  >
-                    {customer.balance > 0 ? "Belum lunas" : "Lunas"}
-                  </span>
+              <span className="text-right">
+                <span
+                  className={`block text-[13px] font-extrabold tracking-tight tabular-nums ${unpaid ? "text-foreground" : "text-success-fg"}`}
+                >
+                  {rupiah.format(customer.balance)}
                 </span>
-                <ChevronRight
-                  className={`size-4 ${selectedId === customer.id ? "text-primary" : "text-muted-foreground"}`}
-                />
+                <span
+                  className={`mt-0.5 block text-[10px] font-semibold ${unpaid ? "text-warning-fg" : "text-success-fg"}`}
+                >
+                  {unpaid ? "Belum lunas" : "Lunas"}
+                </span>
               </span>
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </aside>
   );
