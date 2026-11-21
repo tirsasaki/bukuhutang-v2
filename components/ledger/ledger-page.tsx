@@ -124,13 +124,15 @@ export function LedgerPage({ initialData }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground lg:flex lg:h-dvh lg:min-h-0 lg:flex-col lg:overflow-hidden">
+    <main className="min-h-dvh bg-background text-foreground md:flex md:h-dvh md:min-h-0 md:flex-col md:overflow-hidden">
       <Toaster richColors position="top-right" />
       <LedgerHeader
         storeName={data.store.name}
         openBalance={openBalance}
       />
-      <div className="grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)_minmax(280px,340px)]">
+      {/* Ponsel: satu kolom (daftar ↔ detail). Tablet: daftar + detail.
+          Desktop ≥1180px: daftar + detail + grafik tren, seperti mockup. */}
+      <div className="grid md:min-h-0 md:flex-1 md:grid-cols-[290px_minmax(0,1fr)] md:grid-rows-1 md:overflow-hidden desk:grid-cols-[316px_minmax(0,1fr)_326px]">
         <CustomerList
           data={data}
           loading={loading}
@@ -157,7 +159,11 @@ export function LedgerPage({ initialData }: Props) {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />
-        <TrendPanel data={data} />
+        <TrendPanel
+          data={data}
+          selectedId={selectedId}
+          onSelectCustomer={selectCustomer}
+        />
       </div>
       <CustomerDialogs
         customerOpen={customerOpen}

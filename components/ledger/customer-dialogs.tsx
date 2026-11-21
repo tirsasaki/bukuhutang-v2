@@ -43,19 +43,32 @@ export function CustomerDialogs({
             }
           >
             <DialogHeader>
-              <DialogTitle>Tambah pelanggan</DialogTitle>
+              <DialogTitle>Tambah pelanggan baru</DialogTitle>
               <DialogDescription>
-                Simpan nama dan nomor yang dapat dihubungi.
+                Simpan nama dan nomor WhatsApp untuk pengiriman rincian tagihan.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-5">
+            <div className="space-y-3.5 py-5">
               <div className="space-y-2">
-                <Label htmlFor="name">Nama pelanggan</Label>
-                <Input id="name" name="name" required autoFocus />
+                <Label htmlFor="name">Nama pelanggan / warung</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  maxLength={100}
+                  placeholder="Contoh: Warung Bu Ani"
+                  required
+                  autoFocus
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Nomor telepon</Label>
-                <Input id="phone" name="phone" inputMode="tel" />
+                <Label htmlFor="phone">Nomor WhatsApp</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  maxLength={30}
+                  inputMode="tel"
+                  placeholder="0812-xxxx-xxxx"
+                />
               </div>
             </div>
             <DialogFooter>
@@ -68,7 +81,7 @@ export function CustomerDialogs({
               </Button>
               <Button type="submit" disabled={saving}>
                 {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-                Simpan
+                Tambah pelanggan
               </Button>
             </DialogFooter>
           </form>
@@ -91,7 +104,7 @@ export function CustomerDialogs({
                 Perbarui nama dan nomor WhatsApp tanpa mengubah riwayat piutang.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-5">
+            <div className="space-y-3.5 py-5">
               <div className="space-y-2">
                 <Label htmlFor="editName">Nama pelanggan</Label>
                 <Input

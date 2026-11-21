@@ -1,10 +1,9 @@
 "use client";
-import { Button } from "@/components/ui/button";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { rupiah } from "@/lib/ledger/format";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { BrandLogo, iconButtonClass } from "@/components/brand-logo";
 import {
-  BookOpenText,
   CircleDollarSign,
   LogOut,
   Settings2,
@@ -17,33 +16,31 @@ type Props = {
   openBalance: number;
 };
 
-function OpenBalanceSummary({ openBalance }: { openBalance: number }) {
-  const formattedBalance = rupiah.format(openBalance);
+const headerIconButton = iconButtonClass;
 
+function OpenBalancePill({ openBalance }: { openBalance: number }) {
+  const formatted = rupiah.format(openBalance);
   return (
-    <div className="flex min-w-0 items-center gap-2.5 md:justify-end">
-      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300">
-        <CircleDollarSign className="size-3.5" aria-hidden="true" />
+    <div
+      className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border-soft bg-background py-1.5 pr-3.5 pl-2"
+      title={`Total belum lunas: ${formatted}`}
+    >
+      <span className="grid size-[30px] shrink-0 place-items-center rounded-[9px] bg-info-bg text-info-fg">
+        <CircleDollarSign className="size-4" aria-hidden="true" />
       </span>
-      <dl className="flex min-w-0 items-center gap-2 lg:block">
-        <dt className="hidden text-[10px] font-medium text-muted-foreground lg:block">
+      <dl className="min-w-0">
+        <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
           Total belum lunas
         </dt>
-        <dd
-          className="min-w-[11ch] truncate text-base font-bold tracking-tight text-primary tabular-nums lg:mt-0.5 lg:text-lg"
-          title={formattedBalance}
-        >
-          {formattedBalance}
+        <dd className="truncate text-base leading-tight font-extrabold tracking-tight text-primary tabular-nums">
+          {formatted}
         </dd>
       </dl>
     </div>
   );
 }
 
-export function LedgerHeader({
-  storeName,
-  openBalance,
-}: Props) {
+export function LedgerHeader({ storeName, openBalance }: Props) {
   const router = useRouter();
   async function signOut() {
     const supabase = createSupabaseBrowserClient();
@@ -52,61 +49,67 @@ export function LedgerHeader({
     router.refresh();
   }
 
-  const utilityButton =
-    "size-8 rounded-lg border border-border/60 bg-background/65 text-muted-foreground shadow-none transition-colors duration-200 hover:border-border hover:bg-background hover:text-foreground";
-
   return (
-    <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-2 border-b border-border/60 bg-card/85 px-3 py-2 backdrop-blur-xl sm:px-4 md:flex md:h-[68px] md:gap-3 md:py-0 lg:px-5">
-      <div className="flex min-w-0 items-center gap-2 md:shrink-0">
-        <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_3px_10px_rgba(11,79,85,0.12)]">
-          <BookOpenText className="size-4.5" aria-hidden="true" />
+    <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-card/95 backdrop-blur-xl md:static md:bg-card">
+      <div className="flex h-14 items-center justify-between gap-3 px-3 sm:h-16 sm:gap-4 sm:px-5">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-[11px]">
+          <BrandLogo className="size-9 sm:size-[38px]" />
+          <div className="min-w-0">
+            <p className="truncate text-[15px] leading-tight font-extrabold tracking-tight">
+              Buku Piutang
+            </p>
+            <p
+              className="mt-0.5 flex min-w-0 items-center gap-[5px] text-[11px] text-muted-foreground"
+              title={storeName}
+            >
+              <span className="size-1.5 shrink-0 rounded-full bg-success-dot" />
+              <span className="truncate">{storeName}</span>
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold leading-tight tracking-tight">
-            Buku Piutang
-          </p>
-          <p
-            className="mt-0.5 truncate text-[10px] text-muted-foreground"
-            title={storeName}
+
+        <div className="flex shrink-0 items-center gap-3.5">
+          <div className="hidden sm:block">
+            <OpenBalancePill openBalance={openBalance} />
+          </div>
+          <nav
+            aria-label="Pengaturan dan akun"
+            className="flex items-center gap-1.5"
           >
-            {storeName}
-          </p>
+            <ThemeSwitch />
+            <Link
+              href="/pengaturan"
+              aria-label="Buka pengaturan toko"
+              title="Pengaturan toko"
+              className={headerIconButton}
+            >
+              <Settings2 className="size-4" aria-hidden="true" />
+            </Link>
+            <button
+              type="button"
+              className={headerIconButton}
+              aria-label="Keluar dari akun"
+              title="Keluar dari akun"
+              onClick={() => void signOut()}
+            >
+              <LogOut className="size-4" aria-hidden="true" />
+            </button>
+          </nav>
         </div>
       </div>
 
-      <div className="col-span-2 row-start-2 min-w-0 border-t border-border/50 pt-2 md:ml-auto md:shrink-0 md:border-t-0 md:border-r md:border-border/60 md:pt-0 md:pr-3">
-        <OpenBalanceSummary openBalance={openBalance} />
+      {/* Ponsel: total belum lunas tampil sebagai baris ringkas di bawah header. */}
+      <div className="flex items-center justify-between gap-3 border-t border-border-soft bg-background/70 px-3 py-2 sm:hidden">
+        <span className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+          <span className="grid size-6 place-items-center rounded-md bg-info-bg text-info-fg">
+            <CircleDollarSign className="size-3.5" aria-hidden="true" />
+          </span>
+          Total belum lunas
+        </span>
+        <span className="truncate text-[15px] font-extrabold tracking-tight text-primary tabular-nums">
+          {rupiah.format(openBalance)}
+        </span>
       </div>
-
-      <nav
-        aria-label="Pengaturan dan akun"
-        className="col-start-2 row-start-1 flex shrink-0 items-center gap-1"
-      >
-        <ThemeSwitch
-          compact
-          className="h-8 rounded-lg px-1 transition-colors duration-200 [&>svg]:hidden sm:px-1.5 sm:[&>svg]:block"
-        />
-        <Button asChild variant="ghost" size="icon" className={utilityButton}>
-          <Link
-            href="/pengaturan"
-            aria-label="Buka pengaturan toko"
-            title="Pengaturan toko"
-          >
-            <Settings2 className="size-4" aria-hidden="true" />
-          </Link>
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={utilityButton}
-          aria-label="Keluar dari akun"
-          title="Keluar dari akun"
-          onClick={() => void signOut()}
-        >
-          <LogOut className="size-4" aria-hidden="true" />
-        </Button>
-      </nav>
     </header>
   );
 }

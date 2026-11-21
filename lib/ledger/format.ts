@@ -20,6 +20,20 @@ export function formatDate(value?: string | null) {
   return Number.isNaN(date.getTime()) ? value : shortDate.format(date);
 }
 
+/** Inisial dua kata pertama, mis. "Warung Bu Siti" → "WB". */
+export function initials(name: string) {
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase() || "PL"
+  );
+}
+
 export function asNumber(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;

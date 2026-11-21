@@ -22,14 +22,7 @@ import {
   TableFooter,
 } from "@/components/ui/table";
 import { TabsContent } from "@/components/ui/tabs";
-import {
-  CheckCircle2,
-  Clock3,
-  Loader2,
-  ReceiptText,
-  Trash2,
-  UserRound,
-} from "lucide-react";
+import { Loader2, ReceiptText, Trash2 } from "lucide-react";
 import {
   asNumber,
   debtPricing,
@@ -38,6 +31,31 @@ import {
 } from "@/lib/ledger/format";
 import type { Customer, Debt, PostAction } from "@/lib/ledger/types";
 import { toast } from "sonner";
+
+const th =
+  "h-auto px-3.5 py-2.5 text-[11px] font-bold tracking-[0.04em] text-subtle-foreground uppercase";
+const td = "px-3.5 py-3 align-top text-[13px]";
+
+function GrosirTag() {
+  return (
+    <span className="ml-[5px] inline-block rounded-[5px] bg-accent px-1.5 py-px align-[1px] text-[10px] font-bold text-secondary-foreground">
+      Grosir
+    </span>
+  );
+}
+
+function StatusBadge({ debt }: { debt: Debt }) {
+  const remaining = Math.max(0, debt.amount - debt.paid_amount);
+  const label =
+    remaining <= 0 ? "Lunas" : debt.paid_amount > 0 ? "Sebagian" : "Belum lunas";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-full border px-[9px] py-[3px] text-[11px] font-bold whitespace-nowrap ${remaining > 0 ? "border-warning-border bg-warning-bg text-warning-fg" : "border-success-border bg-success-bg text-success-fg"}`}
+    >
+      {label}
+    </span>
+  );
+}
 
 type Props = {
   selected: Customer;
@@ -125,235 +143,173 @@ export function CustomerLedgerTab({
     }
   }
 
+  const selectAllState = allVisibleSelected
+    ? true
+    : someVisibleSelected
+      ? "indeterminate"
+      : false;
+
   return (
     <TabsContent value="ledger" className="m-0 min-w-0">
-      <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-5 @xl:px-5">
-        <div>
-          <h3 className="text-sm font-bold">Riwayat buku piutang</h3>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {customerDebts.length} catatan · {openCount} piutang aktif
-          </p>
+      {/* Toolbar: filter + tindakan massal */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border-soft px-3 py-3 @xl:px-[18px]">
+        <div
+          role="group"
+          aria-label="Filter buku piutang"
+          className="inline-flex gap-1.5"
+        >
+          {(
+            [
+              ["all", `Semua (${customerDebts.length})`],
+              ["active", `Belum lunas (${openCount})`],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={filter === id}
+              onClick={() => changeFilter(id)}
+              className={`rounded-lg border px-2.5 py-[5px] text-[11.5px] font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${filter === id ? "border-primary/25 bg-secondary text-primary dark:border-brand/30" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-        <div className="flex shrink-0 items-center">
-          <div
-            role="group"
-            aria-label="Filter buku piutang"
-            className="flex items-center rounded-lg border border-border/70 bg-muted/60 p-0.5"
+        {selectedDebtIds.size > 0 ? (
+          <Button
+            type="button"
+            variant="danger-soft"
+            size="sm"
+            className="h-8 gap-1.5 text-xs"
+            disabled={deleting}
+            onClick={() => setDeleteConfirmOpen(true)}
           >
-            <button
-              type="button"
-              aria-pressed={filter === "all"}
-              onClick={() => changeFilter("all")}
-              className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px]! font-semibold! transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filter === "all" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Semua
-              <span className="rounded bg-muted px-1 tabular-nums">
-                {customerDebts.length}
-              </span>
-            </button>
-            <button
-              type="button"
-              aria-pressed={filter === "active"}
-              onClick={() => changeFilter("active")}
-              className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px]! font-semibold! transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filter === "active" ? "bg-card text-amber-900 shadow-sm dark:text-amber-300" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Aktif
-              <span className="rounded bg-muted px-1 tabular-nums">
-                {openCount}
-              </span>
-            </button>
-          </div>
-        </div>
+            <Trash2 className="size-3.5" aria-hidden="true" />
+            Hapus {selectedDebtIds.size} dipilih
+          </Button>
+        ) : (
+          <span className="hidden text-[11.5px] text-muted-foreground @md:inline">
+            Centang baris untuk tindakan massal
+          </span>
+        )}
       </div>
-      {visibleDebts.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border/60 bg-muted/30 px-4 py-2.5 @xl:px-5">
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium">
-            <Checkbox
-              aria-label="Pilih semua transaksi yang ditampilkan"
-              checked={
-                allVisibleSelected
-                  ? true
-                  : someVisibleSelected
-                    ? "indeterminate"
-                    : false
-              }
-              onCheckedChange={(checked) =>
-                toggleAllVisible(checked === true)
-              }
-            />
-            Pilih semua
-          </label>
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] text-muted-foreground">
-              {selectedDebtIds.size} transaksi dipilih
-            </span>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              className="h-8 gap-1.5 text-xs!"
-              disabled={!selectedDebtIds.size || deleting}
-              onClick={() => setDeleteConfirmOpen(true)}
-            >
-              <Trash2 className="size-3.5" aria-hidden="true" />
-              Hapus terpilih
-            </Button>
-          </div>
-        </div>
-      )}
+
       {visibleDebts.length > 0 ? (
         <>
-          <div className="space-y-3 bg-muted/20 p-3 @4xl:hidden">
-            {visibleDebts.map((debt) => {
-              const { unitPrice: price, discount } = debtPricing(debt);
-              const remaining = Math.max(0, debt.amount - debt.paid_amount);
-              const settled = remaining <= 0;
-              const partial = !settled && debt.paid_amount > 0;
-              return (
-                <article
-                  key={debt.id}
-                  className={`rounded-xl border bg-card p-3 shadow-xs ${selectedDebtIds.has(debt.id) ? "border-primary/60 ring-2 ring-primary/10" : "border-border/70"}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
+          {/* Tampilan kartu untuk layar sempit (ponsel/tablet) */}
+          <div className="@xl:hidden">
+            <label className="flex cursor-pointer items-center gap-2.5 border-b border-border-soft bg-background px-3 py-2.5 text-[11px] font-bold tracking-wide text-subtle-foreground uppercase">
+              <Checkbox
+                aria-label="Pilih semua transaksi yang ditampilkan"
+                checked={selectAllState}
+                onCheckedChange={(checked) => toggleAllVisible(checked === true)}
+              />
+              Pilih semua ({visibleDebts.length})
+            </label>
+            <ul className="divide-y divide-border-soft">
+              {visibleDebts.map((debt) => {
+                const { unitPrice: price, discount } = debtPricing(debt);
+                const remaining = Math.max(0, debt.amount - debt.paid_amount);
+                const checked = selectedDebtIds.has(debt.id);
+                return (
+                  <li
+                    key={debt.id}
+                    className={`grid grid-cols-[auto_minmax(0,1fr)] gap-3 px-3 py-3 transition-colors ${checked ? "bg-secondary/60" : ""}`}
+                  >
                     <Checkbox
-                      className="mt-0.5"
+                      className="mt-0.5 size-[18px]"
                       aria-label={`Pilih transaksi ${debt.item || debt.invoice_no || debt.id}`}
-                      checked={selectedDebtIds.has(debt.id)}
-                      onCheckedChange={(checked) =>
-                        toggleDebt(debt.id, checked === true)
+                      checked={checked}
+                      onCheckedChange={(value) =>
+                        toggleDebt(debt.id, value === true)
                       }
                     />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-mono text-[11px] font-medium text-primary">
-                        {debt.invoice_no || "Tanpa nota"}
-                      </p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        {formatDate(debt.date)}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold ${settled ? "bg-emerald-50 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-300" : partial ? "bg-sky-50 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300" : "bg-amber-50 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300"}`}
-                    >
-                      {settled ? "Lunas" : partial ? "Sebagian" : "Belum lunas"}
-                    </span>
-                  </div>
-                  <p className="mt-3 break-words text-sm font-semibold">
-                    {debt.item || "Piutang"}
-                  </p>
-                  <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
-                    {debt.qty} × {rupiah.format(price)} · {debt.price_mode === "wholesale" ? "Grosir" : "Eceran"}
-                  </p>
-                  {discount > 0 && (
-                    <p className="mt-1 text-[11px] font-medium text-amber-900 tabular-nums dark:text-amber-300">
-                      Diskon {rupiah.format(discount)} · Subtotal {rupiah.format(debt.amount)}
-                    </p>
-                  )}
-                  <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground">Nilai piutang</p>
-                      <p className="mt-1 text-xs font-semibold tabular-nums">
-                        {rupiah.format(debt.amount)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-muted-foreground">Terbayar</p>
-                      <p className="mt-1 text-xs font-semibold text-emerald-900 tabular-nums dark:text-emerald-300">
-                        {rupiah.format(debt.paid_amount)}
-                      </p>
-                    </div>
-                    <div className="col-span-2 flex items-end justify-between gap-3 rounded-lg bg-muted/50 p-2.5">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground">Sisa tagihan</p>
-                        <p className="mt-1 text-sm font-bold text-primary tabular-nums">
-                          {rupiah.format(remaining)}
-                        </p>
+                    <div className="min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="mb-[3px] inline-block max-w-full truncate rounded-[5px] bg-muted px-1.5 py-px font-mono text-[10.5px] font-bold text-muted-foreground">
+                            {debt.invoice_no || "Tanpa nota"}
+                          </span>
+                          <p className="text-[13px] font-bold break-words">
+                            {debt.item || "Piutang"}
+                            {debt.price_mode === "wholesale" && <GrosirTag />}
+                          </p>
+                        </div>
+                        <StatusBadge debt={debt} />
                       </div>
-                      <p className="max-w-[45%] text-right text-[10px] text-muted-foreground">
-                        {debt.cashier || "Kasir belum dicatat"}
+                      <p className="mt-0.5 text-[11.5px] text-muted-foreground tabular-nums">
+                        {formatDate(debt.date)} · {debt.qty} ×{" "}
+                        {rupiah.format(price)}
+                        {discount > 0 && ` − diskon ${rupiah.format(discount)}`}
                       </p>
+                      <div className="mt-2 flex items-end justify-between gap-3">
+                        <p className="min-w-0 truncate text-[11.5px] text-muted-foreground">
+                          {debt.cashier || "Kasir belum dicatat"}
+                        </p>
+                        <div className="shrink-0 text-right tabular-nums">
+                          <p className="text-[11px] text-muted-foreground">
+                            Total {rupiah.format(debt.amount)}
+                          </p>
+                          <p
+                            className={`text-sm font-extrabold ${remaining > 0 ? "text-foreground" : "text-success-fg"}`}
+                          >
+                            Sisa {rupiah.format(remaining)}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
-            <div className="rounded-xl border border-border/70 bg-card p-3">
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <span className="text-muted-foreground">Total {visibleDebts.length} catatan</span>
-                <span className="font-bold text-primary tabular-nums">Sisa {rupiah.format(outstanding)}</span>
-              </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-border bg-background px-3 py-3 text-[12.5px] font-bold tabular-nums">
+              <span>Ringkasan ({visibleDebts.length} item)</span>
+              <span className="text-primary">Sisa {rupiah.format(outstanding)}</span>
+              <span className="w-full text-[11px] font-semibold text-muted-foreground">
+                Total {rupiah.format(total)} ·{" "}
+                <span className="text-success-fg">
+                  Terbayar {rupiah.format(paid)}
+                </span>
+              </span>
             </div>
           </div>
+
+          {/* Tabel untuk layar lebar, mengikuti mockup */}
           <div
             role="region"
             aria-label={`Tabel piutang ${selected.name}`}
             tabIndex={0}
-            className="hidden overflow-x-auto [&>[data-slot=table-container]]:overflow-visible focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring @4xl:block"
+            className="hidden overflow-x-auto focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset @xl:block [&>[data-slot=table-container]]:overflow-visible"
           >
-            <Table className="min-w-[820px] table-auto">
+            <Table className="min-w-[620px]">
               <caption className="sr-only">
-                Rincian piutang {selected.name}: nota, barang, nilai,
-                pembayaran, dan sisa tagihan.
+                Rincian piutang {selected.name}: nota, barang, kasir, total,
+                sisa, dan status.
               </caption>
-              <colgroup>
-                <col className="w-12" />
-                <col className="w-px" />
-                <col />
-                <col className="w-px" />
-                <col className="w-px" />
-                <col className="w-px" />
-                <col className="w-px" />
-              </colgroup>
-              <TableHeader className="border-b border-border/70 bg-muted/50">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead scope="col" className="w-12 pl-5">
+              <TableHeader>
+                <TableRow className="border-border-soft bg-background hover:bg-background">
+                  <TableHead scope="col" className={`${th} w-9 pr-0`}>
                     <Checkbox
                       aria-label="Pilih semua transaksi yang ditampilkan"
-                      checked={
-                        allVisibleSelected
-                          ? true
-                          : someVisibleSelected
-                            ? "indeterminate"
-                            : false
-                      }
+                      checked={selectAllState}
                       onCheckedChange={(checked) =>
                         toggleAllVisible(checked === true)
                       }
                     />
                   </TableHead>
-                  <TableHead
-                    scope="col"
-                    className="w-px text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
-                    Nota / tanggal
+                  <TableHead scope="col" className={th}>
+                    Nota &amp; Barang
                   </TableHead>
-                  <TableHead
-                    scope="col"
-                    className="w-full text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
-                    Barang / rincian
+                  <TableHead scope="col" className={th}>
+                    Kasir
                   </TableHead>
-                  <TableHead
-                    scope="col"
-                    className="w-px text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
-                    Nilai piutang
+                  <TableHead scope="col" className={`${th} text-right`}>
+                    Total
                   </TableHead>
-                  <TableHead
-                    scope="col"
-                    className="w-px text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
-                    Terbayar
+                  <TableHead scope="col" className={`${th} text-right`}>
+                    Sisa
                   </TableHead>
-                  <TableHead
-                    scope="col"
-                    className="w-px text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
-                    Sisa tagihan
-                  </TableHead>
-                  <TableHead
-                    scope="col"
-                    className="w-px pr-5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
+                  <TableHead scope="col" className={th}>
                     Status
                   </TableHead>
                 </TableRow>
@@ -362,137 +318,68 @@ export function CustomerLedgerTab({
                 {visibleDebts.map((debt) => {
                   const { unitPrice: price, discount } = debtPricing(debt);
                   const remaining = Math.max(0, debt.amount - debt.paid_amount);
-                  const settled = remaining <= 0;
-                  const partial = !settled && debt.paid_amount > 0;
-                  const percent = settled
-                    ? 100
-                    : Math.min(
-                        99,
-                        Math.max(
-                          0,
-                          Math.floor((debt.paid_amount / debt.amount) * 100),
-                        ),
-                      );
+                  const checked = selectedDebtIds.has(debt.id);
                   return (
                     <TableRow
                       key={debt.id}
-                      data-state={
-                        selectedDebtIds.has(debt.id) ? "selected" : undefined
-                      }
-                      className="border-border/60 hover:bg-secondary/20 data-[state=selected]:bg-secondary/40"
+                      data-state={checked ? "selected" : undefined}
+                      className="border-border-soft hover:bg-card-hover data-[state=selected]:bg-secondary/60"
                     >
-                      <TableCell className="py-4 pl-5 align-top">
+                      <TableCell className={`${td} pr-0`}>
                         <Checkbox
                           aria-label={`Pilih transaksi ${debt.item || debt.invoice_no || debt.id}`}
-                          checked={selectedDebtIds.has(debt.id)}
-                          onCheckedChange={(checked) =>
-                            toggleDebt(debt.id, checked === true)
+                          checked={checked}
+                          onCheckedChange={(value) =>
+                            toggleDebt(debt.id, value === true)
                           }
                         />
                       </TableCell>
-                      <TableCell className="py-4 align-top">
-                        <p className="font-mono text-[11px] font-medium text-primary">
+                      <TableCell className={`${td} min-w-[220px] whitespace-normal`}>
+                        <span className="mb-[3px] inline-block rounded-[5px] bg-muted px-1.5 py-px font-mono text-[10.5px] font-bold text-muted-foreground">
                           {debt.invoice_no || "Tanpa nota"}
-                        </p>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          {formatDate(debt.date)}
-                        </p>
-                      </TableCell>
-                      <TableCell className="w-full min-w-[220px] py-4 whitespace-normal">
-                        <p className="break-words text-sm font-semibold">
+                        </span>
+                        <p className="font-bold break-words">
                           {debt.item || "Piutang"}
+                          {debt.price_mode === "wholesale" && <GrosirTag />}
                         </p>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                          <span className="tabular-nums">
-                            {debt.qty} × {rupiah.format(price)}
-                          </span>
-                          <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${debt.price_mode === "wholesale" ? "bg-violet-50 text-violet-900" : "bg-muted text-muted-foreground"}`}
-                          >
-                            {debt.price_mode === "wholesale"
-                              ? "Grosir"
-                              : "Eceran"}
-                          </span>
-                        </div>
-                        {discount > 0 && (
-                          <p className="mt-1.5 text-[11px] font-medium text-amber-900 tabular-nums dark:text-amber-300">
-                            Diskon {rupiah.format(discount)} · Subtotal {rupiah.format(debt.amount)}
-                          </p>
-                        )}
-                        <p className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <UserRound
-                            className="size-3 shrink-0"
-                            aria-hidden="true"
-                          />
-                          {debt.cashier || "Kasir belum dicatat"}
+                        <p className="mt-0.5 text-[11.5px] text-muted-foreground tabular-nums">
+                          {formatDate(debt.date)} · {debt.qty} ×{" "}
+                          {rupiah.format(price)}
+                          {discount > 0 &&
+                            ` − diskon ${rupiah.format(discount)}`}
                         </p>
                       </TableCell>
-                      <TableCell className="text-right text-xs font-semibold tabular-nums">
+                      <TableCell className={`${td} text-xs text-muted-foreground`}>
+                        {debt.cashier || "—"}
+                      </TableCell>
+                      <TableCell className={`${td} text-right font-semibold tabular-nums`}>
                         {rupiah.format(debt.amount)}
                       </TableCell>
-                      <TableCell className="text-right text-xs font-medium text-emerald-900 tabular-nums dark:text-emerald-300">
-                        {rupiah.format(debt.paid_amount)}
-                      </TableCell>
                       <TableCell
-                        className={`text-right text-sm font-bold tabular-nums ${settled ? "text-muted-foreground" : "text-primary"}`}
+                        className={`${td} text-right font-extrabold tabular-nums ${remaining > 0 ? "text-foreground" : "text-success-fg"}`}
                       >
                         {rupiah.format(remaining)}
                       </TableCell>
-                      <TableCell className="pr-5 text-right">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold ${settled ? "bg-emerald-50 text-emerald-900 dark:bg-emerald-400/15 dark:text-emerald-300" : partial ? "bg-sky-50 text-sky-900 dark:bg-sky-400/15 dark:text-sky-300" : "bg-amber-50 text-amber-900 dark:bg-amber-400/15 dark:text-amber-300"}`}
-                        >
-                          {settled ? (
-                            <CheckCircle2
-                              className="size-3"
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <Clock3 className="size-3" aria-hidden="true" />
-                          )}
-                          {settled
-                            ? "Lunas"
-                            : partial
-                              ? "Sebagian"
-                              : "Belum lunas"}
-                        </span>
-                        <div className="mt-2 ml-auto w-24">
-                          <div
-                            className="h-1 overflow-hidden rounded-full bg-muted"
-                            aria-hidden="true"
-                          >
-                            <div
-                              className={`h-full rounded-full ${settled ? "bg-emerald-500" : "bg-primary/60"}`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                          <p className="mt-1 text-[10px] text-muted-foreground">
-                            {percent}% terbayar
-                          </p>
-                        </div>
+                      <TableCell className={td}>
+                        <StatusBadge debt={debt} />
                       </TableCell>
                     </TableRow>
                   );
                 })}
               </TableBody>
-              <TableFooter className="bg-muted/30">
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={3} className="py-4 pl-5 text-xs">
-                    Total {visibleDebts.length} catatan
+              <TableFooter className="border-border bg-background">
+                <TableRow className="hover:bg-background">
+                  <TableCell colSpan={3} className="px-3.5 py-3 text-[12.5px] font-bold">
+                    Ringkasan ({visibleDebts.length} item)
                   </TableCell>
-                  <TableCell className="text-right text-xs font-bold tabular-nums">
+                  <TableCell className="px-3.5 py-3 text-right text-[12.5px] font-bold tabular-nums">
                     {rupiah.format(total)}
                   </TableCell>
-                  <TableCell className="text-right text-xs font-bold text-emerald-900 tabular-nums dark:text-emerald-300">
-                    {rupiah.format(paid)}
-                  </TableCell>
-                  <TableCell className="text-right text-sm font-bold text-primary tabular-nums">
+                  <TableCell className="px-3.5 py-3 text-right text-[12.5px] font-bold text-primary tabular-nums">
                     {rupiah.format(outstanding)}
                   </TableCell>
-                  <TableCell className="pr-5 text-right text-[11px] text-muted-foreground">
-                    {visibleDebts.filter(
-                      (debt) => debt.amount > debt.paid_amount,
-                    ).length} piutang aktif
+                  <TableCell className="px-3.5 py-3 text-[11px] font-bold text-success-fg tabular-nums">
+                    Terbayar {rupiah.format(paid)}
                   </TableCell>
                 </TableRow>
               </TableFooter>
@@ -500,12 +387,12 @@ export function CustomerLedgerTab({
           </div>
         </>
       ) : (
-        <div className="grid min-h-56 place-items-center border-t border-border/60 p-8 text-center">
+        <div className="grid min-h-56 place-items-center p-8 text-center">
           <div>
             <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-secondary text-primary">
               <ReceiptText className="size-5" aria-hidden="true" />
             </div>
-            <p className="mt-3 text-sm font-semibold">
+            <p className="mt-3 text-sm font-bold">
               {filter === "active"
                 ? "Tidak ada piutang aktif"
                 : "Belum ada piutang"}
