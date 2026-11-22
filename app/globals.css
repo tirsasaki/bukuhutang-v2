@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @import "../vendor/shadcn-tailwind-4.13.0.css";
 
+/* Varian dark: mengikuti kelas .dark dari next-themes (bukan prefers-color-scheme
+   sistem operasi), agar tema terang tetap terang meski OS memakai mode gelap. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * Palet mengikuti mockup "Buku Piutang v2 — Konsep Desain UI".
  * Token shadcn (background, card, primary, ...) dipetakan ke warna mockup,
