@@ -9,15 +9,15 @@ export function CustomerSummary({ customer, openCount }: Props) {
   const unpaid = customer.balance > 0;
   return (
     <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-3">
-      <div className="col-span-2 rounded-2xl border border-primary/20 bg-linear-150 from-secondary to-card px-[18px] py-4 @2xl:col-span-1 dark:border-brand/30 dark:from-[#172b33] dark:to-card">
-        <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+      <div className="col-span-2 rounded-2xl border border-primary/20 bg-secondary px-[18px] py-4 @2xl:col-span-1 dark:border-brand/30">
+        <div className="flex items-center justify-between text-xs font-semibold text-secondary-foreground">
           <span>Sisa piutang</span>
           <CircleDollarSign className="size-4 text-primary" aria-hidden="true" />
         </div>
         <p className="mt-2.5 text-2xl font-extrabold tracking-tight break-words text-primary tabular-nums">
           {rupiah.format(customer.balance)}
         </p>
-        <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+        <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-secondary-foreground">
           <span
             className={`size-1.5 shrink-0 rounded-full ${unpaid ? "bg-warning-dot" : "bg-success-dot"}`}
           />
@@ -26,7 +26,7 @@ export function CustomerSummary({ customer, openCount }: Props) {
             : "Seluruh catatan sudah lunas"}
         </p>
         {customer.credit_balance > 0 && (
-          <p className="mt-2.5 border-t border-dashed border-border pt-2 text-[11.5px] font-bold text-success-fg tabular-nums">
+          <p className="mt-2.5 border-t border-dashed border-primary/20 pt-2 text-[11.5px] font-bold text-success-fg tabular-nums">
             Saldo kelebihan bayar: {rupiah.format(customer.credit_balance)}
           </p>
         )}
