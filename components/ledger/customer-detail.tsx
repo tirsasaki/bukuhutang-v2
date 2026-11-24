@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { CustomerLedgerTab } from "./customer-ledger-tab";
 import { CustomerPaymentsTab } from "./customer-payments-tab";
+import { CustomerPaymentRecordsTab } from "./customer-payment-records-tab";
 import { CustomerProfileTab } from "./customer-profile-tab";
 import { CustomerSummary } from "./customer-summary";
 import { formatDate, initials } from "@/lib/ledger/format";
@@ -52,6 +53,9 @@ export function CustomerDetail({
   const openCount = selectedDebts.filter(
     (debt) => debt.amount > debt.paid_amount,
   ).length;
+  // Satu "Catat pembayaran" = satu nilai paid_at yang sama.
+  const recordCount = new Set(selectedPayments.map((payment) => payment.paid_at))
+    .size;
   return (
     <section
       className={`${mobileDetailOpen ? "block" : "hidden"} min-w-0 p-3.5 md:block md:overflow-y-auto md:p-5`}
@@ -178,6 +182,12 @@ export function CustomerDetail({
                     {selectedPayments.length}
                   </span>
                 </TabsTrigger>
+                <TabsTrigger value="records" className={tabTrigger}>
+                  Riwayat catat
+                  <span className="rounded-md bg-muted px-1.5 py-px text-[10.5px] text-muted-foreground tabular-nums">
+                    {recordCount}
+                  </span>
+                </TabsTrigger>
                 <TabsTrigger value="profile" className={tabTrigger}>
                   <span className="@md:hidden">Data</span>
                   <span className="hidden @md:inline">Data pelanggan</span>
@@ -195,6 +205,11 @@ export function CustomerDetail({
             />
             <CustomerPaymentsTab
               key={`payments-${selected.id}`}
+              selectedPayments={selectedPayments}
+              selectedDebts={selectedDebts}
+            />
+            <CustomerPaymentRecordsTab
+              key={`records-${selected.id}`}
               selectedPayments={selectedPayments}
               selectedDebts={selectedDebts}
             />
